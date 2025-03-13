@@ -16,6 +16,32 @@ SDL_Surface* gScreenSurface = NULL;
 //Hình ảnh chúng ta sẽ tải và hiển thị trên màn hình
 SDL_Surface* gHelloWorld = NULL;
 
+//Current displayed image ( Hình ảnh hiện tại được hiển thị )
+SDL_Surface* gCurrentSurface = NULL;
+
+//Key press surfaces constants( Hằng số bề mặt bàn phím )
+enum KeyPressSurfaces {
+    KEY_PRESS_SURFACE_DEFAULT,
+    KEY_PRESS_SURFACE_UP,
+    KEY_PRESS_SURFACE_DOWN,
+    KEY_PRESS_SURFACE_LEFT,
+    KEY_PRESS_SURFACE_RIGHT,
+    KEY_PRESS_SURFACE_TOTAL,
+};
+
+//The images that correspond to a keypress ( Các hình ảnh tương ứng với một lần nhấn phím )
+SDL_Surface* gKeyPressSurfaces[KEY_PRESS_SURFACE_TOTAL];
+
+//Loads individual image ( Tải từng hình ảnh )
+SDL_Surface* loadSurface(std::string path) {
+    //Load image at specified path ( Tải hình ảnh lên theo đường dẫn )
+    SDL_Surface* loadedSurface = SDL_LoadBMP(path.c_str());
+    if (loadedSurface == NULL) {
+        std::cout << "Unable to load image! SDL Error: " << path.c_str() << SDL_GetError() << std::endl;
+    }
+    return loadedSurface;
+}
+
 //Khởi động SDL và tạo cửa sổ 
 bool init() {
     //Cờ khởi tạo
@@ -51,13 +77,49 @@ bool loadMedia() {
     //Tải cờ lên thành công
     bool success = true;
 
-    //Tải ảnh "tung tóe"
-    gHelloWorld = SDL_LoadBMP("D:\\Code\\CodeGame\\CodeGame\\background.bmp");
-    if (gHelloWorld == NULL)
-    {
-        std::cout <<"Unable to load image %s! SDL Error: " << "D:\\Code\\CodeGame\\CodeGame\\background.bmp " << SDL_GetError() << std::endl;
+    //Tải bề mặt mặc định
+    gKeyPressSurfaces[KEY_PRESS_SURFACE_DEFAULT] = loadSurface("D:/Code/CodeGame/image/background.bmp");
+    if (gKeyPressSurfaces[KEY_PRESS_SURFACE_DEFAULT] == NULL) {
+        std::cout << "Failed to load default image" << std::endl;
         success = false;
     }
+
+    //Load up surface
+    gKeyPressSurfaces[KEY_PRESS_SURFACE_UP] = loadSurface("D:/Code/CodeGame/image/up.bmp");
+    if (gKeyPressSurfaces[KEY_PRESS_SURFACE_UP] == NULL) {
+        std::cout << "Failed to load up image" << std::endl;
+        success = false;
+    }
+
+    //Load down surface
+    gKeyPressSurfaces[KEY_PRESS_SURFACE_DOWN] = loadSurface("D:/Code/CodeGame/image/down.bmp");
+    if (gKeyPressSurfaces[KEY_PRESS_SURFACE_DOWN] == NULL) {
+        std::cout << "Failed to load down image" << std::endl;
+        success = false;
+    }
+
+    //Load right surface
+    gKeyPressSurfaces[KEY_PRESS_SURFACE_RIGHT] = loadSurface("D:/Code/CodeGame/image/right.bmp");
+    if (gKeyPressSurfaces[KEY_PRESS_SURFACE_RIGHT] == NULL) {
+        std::cout << "Failed to load right image" << std::endl;
+        success = false;
+    }
+
+    //Load left surface
+    gKeyPressSurfaces[KEY_PRESS_SURFACE_LEFT] = loadSurface("D:/Code/CodeGame/image/left.bmp");
+    if (gKeyPressSurfaces[KEY_PRESS_SURFACE_LEFT] == NULL) {
+        std::cout << "Failed to load left image" << std::endl;
+        success = false;
+    }
+
+
+    ////Tải ảnh "tung tóe"
+    //gHelloWorld = SDL_LoadBMP("D:\\Code\\CodeGame\\CodeGame\\background.bmp");
+    //if (gHelloWorld == NULL)
+    //{
+    //    std::cout <<"Unable to load image %s! SDL Error: " << "D:\\Code\\CodeGame\\CodeGame\\background.bmp " << SDL_GetError() << std::endl;
+    //    success = false;
+    //}
 
     return success;
 }
@@ -76,6 +138,8 @@ void close() {
     SDL_Quit();
 }
 
+
+
 int main(int argc, char* argv[]) {
     //Start up SDL and create window (Khởi động SDL và tạo cửa sổ)
     if (!init())
@@ -92,19 +156,64 @@ int main(int argc, char* argv[]) {
         else
         {
             //Apply the image (Áp dụng hình ảnh)
-            SDL_BlitSurface(gHelloWorld, NULL, gScreenSurface, NULL); //(hình ảnh nguồn, ..., đích, ...)
+            SDL_BlitSurface(gCurrentSurface, NULL, gScreenSurface, NULL); //(hình ảnh nguồn, ..., đích, ...)
         }
         // Update surface(Cập nhật bề mặt)
         SDL_UpdateWindowSurface(gWindow);
 
-        // Giữ cửa sổ luôn mở
-        SDL_Event e; 
-        bool quit = false; 
-        while (quit == false) { 
-            while (SDL_PollEvent(&e)) { 
-                if (e.type == SDL_QUIT) 
+        //Main loop flag (Cờ vòng lặp chính)
+        bool quit = false;
+
+        //Event handler (Trình xử lý sự kiện)
+        SDL_Event e;
+
+        //Set default current surface
+        gCurrentSurface = gKeyPressSurfaces[KEY_PRESS_SURFACE_DEFAULT];
+
+        //
+        while ( !quit ) 
+        {
+            //Handle events on queue (Xử lý các sự kiện hàng đợi)
+            while ( SDL_PollEvent(&e) != 0 ) 
+            { 
+                //User requests quit (Người dùng yêu cầu thoát)
+                if ( e.type == SDL_QUIT )
+                {
                     quit = true; 
+                }
+                //User presses a key (Người dùng nhấn một phím)
+                else if (e.type == SDL_KEYDOWN) {
+                    //Select surfaces based on key press (chọn bền mặt dựa trên phím người dùng nhấn)
+                    switch (e.key.keysym.sym)
+                    {
+                    case SDLK_UP:
+                        gCurrentSurface = gKeyPressSurfaces[KEY_PRESS_SURFACE_UP];
+                        break;
+                        
+                    case SDLK_DOWN:
+                        gCurrentSurface = gKeyPressSurfaces[KEY_PRESS_SURFACE_DOWN];
+                        break;
+
+                    case SDLK_LEFT:
+                        gCurrentSurface = gKeyPressSurfaces[KEY_PRESS_SURFACE_LEFT];
+                        break;
+
+                    case SDLK_RIGHT:
+                        gCurrentSurface = gKeyPressSurfaces[KEY_PRESS_SURFACE_RIGHT];
+                        break;
+
+                    default:
+                        gCurrentSurface = gKeyPressSurfaces[KEY_PRESS_SURFACE_DEFAULT];
+                        break;
+
+                    }
+                }
             } 
+            //Apply the image (Áp dụng hình ảnh)
+            SDL_BlitSurface(gCurrentSurface, NULL, gScreenSurface, NULL);
+
+            //Update the surface(Cập nhật bề mặt)
+            SDL_UpdateWindowSurface(gWindow);
         }
     }
     //Free resources and close SDL (giải phóng tài nguyên và đóng SDL)
