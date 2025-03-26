@@ -1,4 +1,2 @@
 ﻿  main.cpp
-D:\Code\CodeGame\CodeGame\main.cpp(15,18): warning C4305: 'initializing': truncation from 'double' to 'float'
-D:\Code\CodeGame\CodeGame\main.cpp(112,14): warning C4838: conversion from 'int' to 'Uint32' requires a narrowing conversion
   CodeGame.vcxproj -> D:\Code\CodeGame\Debug\CodeGame.exe
