@@ -8,10 +8,10 @@
 #include <ctime>
 #include <algorithm>
 #include <cmath>
-#include <string>    // Cho std::string và std::to_string
-#include <fstream>  // Cho việc đọc/ghi file (lưu điểm)
-#include <sstream>  // Có thể dùng để định dạng chuỗi (tùy chọn)
-#include <limits>   // Dùng khi đọc file điểm
+#include <string>     // Cho std::string và std::to_string
+#include <fstream>    // Cho việc đọc/ghi file (lưu điểm)
+#include <sstream>    // Có thể dùng để định dạng chuỗi (tùy chọn)
+#include <limits>     // Dùng khi đọc file điểm
 
 // Screen dimensions
 const int SCREEN_WIDTH = 1080;
@@ -37,7 +37,26 @@ const int PLAYER_BULLET_WIDTH = 10;
 const int PLAYER_BULLET_HEIGHT = 20;
 const int ENEMY_BULLET_WIDTH = 10;
 const int ENEMY_BULLET_HEIGHT = 20;
-// -------------------------------------------------------------
+
+
+// --- THÊM MỚI: Health & Damage Constants ---
+const int PLAYER_INITIAL_HEALTH = 10;
+const int NORMAL_INITIAL_HEALTH = 6;
+const int STRAIGHT_SHOOTER_INITIAL_HEALTH = 4;
+const int WEAVER_INITIAL_HEALTH = 8;
+const int TANK_INITIAL_HEALTH = 14;
+
+const int PLAYER_BULLET_DAMAGE = 2;
+const int NORMAL_BULLET_DAMAGE = 1;
+const int STRAIGHT_SHOOTER_BULLET_DAMAGE = 2;
+const int WEAVER_BULLET_DAMAGE = 1; // Sát thương đạn (nếu Weaver bắn sau này)
+const int TANK_BULLET_DAMAGE = 4;
+
+const int NORMAL_COLLISION_DAMAGE = 2;           // Sát thương va chạm địch -> người chơi
+const int STRAIGHT_SHOOTER_COLLISION_DAMAGE = 4;
+const int WEAVER_COLLISION_DAMAGE = 2;
+const int TANK_COLLISION_DAMAGE = 8;
+// ------------------------------------------
 
 Uint32 lastEnemySpawnTime = 0;
 float currentEnemySpeed = INITIAL_ENEMY_SPEED;
@@ -46,6 +65,14 @@ float currentEnemySpeed = INITIAL_ENEMY_SPEED;
 enum GameState { MENU, GAME, PAUSED, GAME_OVER };
 GameState state = MENU;
 
+// --- THÊM MỚI: Định nghĩa loại địch ---
+enum EnemyType {
+    NORMAL,           // Loại cũ
+    STRAIGHT_SHOOTER, // Bắn thẳng, đi thẳng
+    WEAVER,           // Bay lượn sóng
+    TANK              // Trâu bò, chịu nhiều đòn
+};
+
 // --- Structs ---
 struct Button {
     SDL_Rect rect;
@@ -53,6 +80,7 @@ struct Button {
     bool hovered;
 };
 
+// --- SỬA ĐỔI: Struct Entity ---
 struct Entity {
     SDL_Rect rect{};
     SDL_Texture* texture = nullptr;
@@ -62,14 +90,27 @@ struct Entity {
     float speedY = 0.0f;
     int enemyStopY = 0;
     Uint32 lastShotTime = 0;
-    Uint32 fireCooldown = 1500; // Cooldown bắn mặc định cho địch
-    // bool toBeDeleted = false; // Không cần nữa vì xóa trực tiếp
+    Uint32 fireCooldown = 1500;
+
+    // --- Các trường cập nhật/mới ---
+    EnemyType type = NORMAL;
+    int health = 1;           // Máu hiện tại
+    int maxHealth = 1;        // Máu tối đa <<< THÊM
+    int bulletDamage = 1;     // Sát thương đạn của entity này <<< THÊM
+    int collisionDamage = 1;  // Sát thương va chạm của entity này <<< THÊM
+    int damage = 0;           // Sát thương CỦA ĐẠN (nếu là đạn) <<< THÊM/SỬA ĐỔI MỤC ĐÍCH
+
+    // Weaver specific
+    float weaveAmplitude = 0.0f;
+    float weaveFrequency = 0.0f;
+    float initialXPos = 0.0f;
 };
+
 // --- Nút Menu (Đã căn giữa X) ---
 const int centeredButtonX = SCREEN_WIDTH / 2 - 280 / 2; // = 400
 Button buttons[] = {
     {{centeredButtonX, 200, 280, 70}, "Start New Game", false},
-    {{centeredButtonX, 290, 280, 70}, "Continue Game", false},
+    {{centeredButtonX, 290, 280, 70}, "Continue Game", false}, // <<< Chức năng chưa được thêm vào phiên bản này
     {{centeredButtonX, 380, 280, 70}, "Music: On", false},
     {{centeredButtonX, 470, 280, 70}, "Exit Game", false}
 };
@@ -86,16 +127,32 @@ const int GAMEOVER_BUTTON_COUNT = sizeof(gameOverButtons) / sizeof(Button);
 const int PAUSE_BUTTON_WIDTH = 80;
 const int PAUSE_BUTTON_HEIGHT = 40;
 Button pauseButton = {
-    {SCREEN_WIDTH - PAUSE_BUTTON_WIDTH - 10, 10, PAUSE_BUTTON_WIDTH, PAUSE_BUTTON_HEIGHT}, // Vị trí góc trên phải, có lề 10px
-    "Pause",
+    {SCREEN_WIDTH - PAUSE_BUTTON_WIDTH - 10, 10, PAUSE_BUTTON_WIDTH, PAUSE_BUTTON_HEIGHT},
+    "||", // Luôn là "||"
     false
 };
+
+// --- THÊM MỚI: Nút Pause Menu ---
+const int PAUSE_MENU_BUTTON_WIDTH = 280;
+const int PAUSE_MENU_BUTTON_HEIGHT = 70;
+const int pauseMenuButtonX = SCREEN_WIDTH / 2 - PAUSE_MENU_BUTTON_WIDTH / 2; // Căn giữa X
+Button pauseMenuButtons[] = {
+    {{pauseMenuButtonX, 250, PAUSE_MENU_BUTTON_WIDTH, PAUSE_MENU_BUTTON_HEIGHT}, "Continue", false},
+    {{pauseMenuButtonX, 340, PAUSE_MENU_BUTTON_WIDTH, PAUSE_MENU_BUTTON_HEIGHT}, "Mute Sound", false}, // Text sẽ được cập nhật khi vào Pause
+    {{pauseMenuButtonX, 430, PAUSE_MENU_BUTTON_WIDTH, PAUSE_MENU_BUTTON_HEIGHT}, "Save & Exit to Menu", false} // <<< Chức năng chưa được thêm vào phiên bản này
+};
+const int PAUSE_MENU_BUTTON_COUNT = sizeof(pauseMenuButtons) / sizeof(Button);
 
 // --- Global Variables ---
 SDL_Texture* playerTexture = nullptr;
 SDL_Texture* enemyTexture = nullptr;
 SDL_Texture* bulletTexture = nullptr; // <<< Sửa: Chỉ cần một texture đạn
 SDL_Texture* enemyBulletTexture = nullptr; // <<< Thêm: Texture đạn địch (nếu muốn khác)
+// --- THÊM MỚI: Textures cho địch mới ---
+SDL_Texture* enemyTextureStraight = nullptr;
+SDL_Texture* enemyTextureWeave = nullptr;
+SDL_Texture* enemyTextureTank = nullptr;
+// ------------------------------------
 std::vector<Entity> enemies;
 std::vector<Entity> bullets;
 std::vector<Entity> enemyBullets;
@@ -103,6 +160,7 @@ Entity player;
 
 bool musicOn = true;
 Mix_Music* bgMusic = nullptr;
+Mix_Music* gameMusic = nullptr;
 Mix_Chunk* startSound = nullptr;
 Mix_Chunk* explosionSound = nullptr;
 SDL_Window* window = nullptr;
@@ -114,39 +172,34 @@ TTF_Font* font = nullptr;
 
 int currentScore = 0;
 int highScore = 0;
-bool running = true; // <<< Global trở lại (nếu cần, hoặc để trong main)
+bool running = true;
 bool isPlayerDragging = false;
-bool isMovingToTarget = false; // <<< THÊM MỚI: Cờ báo đang tự động di chuyển
-float targetMoveX = 0.0f;      // <<< THÊM MỚI: Tọa độ X đích
-float targetMoveY = 0.0f;      // <<< THÊM MỚI: Tọa độ Y đích
+bool isMovingToTarget = false;
+float targetMoveX = 0.0f;
+float targetMoveY = 0.0f;
 bool isFollowingMouse = false;
 
-
-
 // --- Function Declarations ---
-SDL_Texture* loadTexture(const char* path); // <<< Bỏ renderer
+SDL_Texture* loadTexture(const char* path);
 void saveHighScore();
 void loadHighScore();
-void renderText(const std::string& text, int x, int y, SDL_Color color); // <<< Bỏ renderer, font
-void renderButton(Button& button); // <<< Bỏ renderer, font
+void renderText(const std::string& text, int x, int y, SDL_Color color);
+void renderButton(Button& button);
 void spawnEnemy();
 void enemyShoot();
-void updateGame(float deltaTime); // <<< Dùng phiên bản gốc đã sửa
-void cleanup(); // <<< Bỏ renderer, font
-// void resetGame(); // <<< Bỏ đi
-// void handleInput(...); // <<< Bỏ đi
-// void update(...); // <<< Bỏ đi
-// void render(...); // <<< Bỏ đi
+void updateGame(float deltaTime);
+void cleanup();
+// Các hàm saveGameState, loadGameState, resetGame, fileExists không có trong phiên bản này
 
 // --- Function Definitions ---
 
-SDL_Texture* loadTexture(const char* path) { // <<< Bỏ renderer
+SDL_Texture* loadTexture(const char* path) {
     SDL_Surface* surface = IMG_Load(path);
     if (!surface) {
         std::cerr << "Failed to load image: " << path << " - " << IMG_GetError() << std::endl;
         return nullptr;
     }
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface); // <<< Dùng renderer global
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
     if (!texture) {
         std::cerr << "Failed to create texture from " << path << " - " << SDL_GetError() << std::endl;
@@ -189,8 +242,13 @@ void loadHighScore() {
 }
 
 void renderText(const std::string& text, int x, int y, SDL_Color color) {
-    if (!font) { std::cerr << "Font not loaded in renderText!\n"; return; }
-    if (text.empty()) { return; }
+    if (!font) {
+        std::cerr << "Font not loaded in renderText!\n";
+        return;
+    }
+    if (text.empty()) {
+        return;
+    }
 
     SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), color);
     if (!surface) {
@@ -210,7 +268,10 @@ void renderText(const std::string& text, int x, int y, SDL_Color color) {
 }
 
 void renderButton(Button& button) {
-    if (!font) { std::cerr << "Font not loaded in renderButton!\n"; return; }
+    if (!font) {
+        std::cerr << "Font not loaded in renderButton!\n";
+        return;
+    }
 
     SDL_Color color = button.hovered ? SDL_Color{ 150, 150, 150, 255 } : SDL_Color{ 100, 100, 100, 255 };
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
@@ -218,7 +279,10 @@ void renderButton(Button& button) {
 
     SDL_Color textColor = { 255, 255, 255, 255 };
     SDL_Surface* textSurface = TTF_RenderText_Blended(font, button.text.c_str(), textColor);
-    if (!textSurface) { std::cerr << "Failed to render button text surface: " << TTF_GetError() << std::endl; return; }
+    if (!textSurface) {
+        std::cerr << "Failed to render button text surface: " << TTF_GetError() << std::endl;
+        return;
+    }
 
     SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
     if (!textTexture) {
@@ -236,159 +300,257 @@ void renderButton(Button& button) {
 }
 
 void spawnEnemy() {
-    currentEnemySpeed += ENEMY_SPEED_INCREMENT; // Tăng tốc độ mỗi lần spawn (có thể điều chỉnh)
-    int stopY = rand() % 200 + 100; // Vị trí dừng ngẫu nhiên trên màn hình
-
     Entity newEnemy;
-    newEnemy.rect = { rand() % (SCREEN_WIDTH - ENEMY_WIDTH), -ENEMY_HEIGHT, ENEMY_WIDTH, ENEMY_HEIGHT };
-    newEnemy.texture = enemyTexture;
-    newEnemy.xPos = (float)newEnemy.rect.x;
-    newEnemy.yPos = (float)newEnemy.rect.y;
-    newEnemy.speedY = currentEnemySpeed; // Dùng tốc độ hiện tại
-    newEnemy.speedX = 0; // Địch chỉ di chuyển xuống
-    newEnemy.enemyStopY = stopY;
-    newEnemy.lastShotTime = SDL_GetTicks() + (rand() % 1000); // Thêm độ trễ ban đầu ngẫu nhiên trước khi bắn
-    newEnemy.fireCooldown = static_cast<Uint32>(1000 + (rand() % 2000)); // Cooldown bắn ngẫu nhiên
 
+    int typeRoll = rand() % 100;
+    EnemyType chosenType;
+    if (typeRoll < 45) chosenType = NORMAL;
+    else if (typeRoll < 65) chosenType = STRAIGHT_SHOOTER;
+    else if (typeRoll < 85) chosenType = WEAVER;
+    else chosenType = TANK;
+
+    newEnemy.type = chosenType;
+
+    int spawnX = rand() % (SCREEN_WIDTH - ENEMY_WIDTH);
+    newEnemy.rect = { spawnX, -ENEMY_HEIGHT, ENEMY_WIDTH, ENEMY_HEIGHT };
+    newEnemy.xPos = (float)spawnX;
+    newEnemy.yPos = (float)newEnemy.rect.y;
+    newEnemy.speedX = 0;
+    newEnemy.lastShotTime = SDL_GetTicks() + (rand() % 1000);
+
+    switch (chosenType) {
+    case NORMAL:
+        newEnemy.texture = enemyTexture;
+        newEnemy.health = NORMAL_INITIAL_HEALTH;
+        newEnemy.maxHealth = NORMAL_INITIAL_HEALTH;
+        newEnemy.bulletDamage = NORMAL_BULLET_DAMAGE;
+        newEnemy.collisionDamage = NORMAL_COLLISION_DAMAGE;
+        newEnemy.speedY = currentEnemySpeed * (1.0f + (rand() % 3) / 10.0f);
+        newEnemy.enemyStopY = rand() % 200 + 150;
+        newEnemy.fireCooldown = static_cast<Uint32>(1000 + (rand() % 1500));
+        break;
+    case STRAIGHT_SHOOTER:
+        newEnemy.texture = enemyTextureStraight;
+        newEnemy.health = STRAIGHT_SHOOTER_INITIAL_HEALTH;
+        newEnemy.maxHealth = STRAIGHT_SHOOTER_INITIAL_HEALTH;
+        newEnemy.bulletDamage = STRAIGHT_SHOOTER_BULLET_DAMAGE;
+        newEnemy.collisionDamage = STRAIGHT_SHOOTER_COLLISION_DAMAGE;
+        newEnemy.speedY = currentEnemySpeed * (1.2f + (rand() % 3) / 10.0f);
+        newEnemy.enemyStopY = -1;
+        newEnemy.fireCooldown = static_cast<Uint32>(1200 + (rand() % 1000));
+        break;
+    case WEAVER:
+        newEnemy.texture = enemyTextureWeave;
+        newEnemy.health = WEAVER_INITIAL_HEALTH;
+        newEnemy.maxHealth = WEAVER_INITIAL_HEALTH;
+        newEnemy.bulletDamage = WEAVER_BULLET_DAMAGE;
+        newEnemy.collisionDamage = WEAVER_COLLISION_DAMAGE;
+        newEnemy.speedY = currentEnemySpeed * (0.9f + (rand() % 2) / 10.0f);
+        newEnemy.enemyStopY = -1;
+        newEnemy.fireCooldown = UINT32_MAX; // Không bắn
+        newEnemy.initialXPos = newEnemy.xPos;
+        newEnemy.weaveAmplitude = 40.0f + (rand() % 40);
+        newEnemy.weaveFrequency = 0.004f + (float)(rand() % 5) / 1000.0f;
+        break;
+    case TANK:
+        newEnemy.texture = enemyTextureTank;
+        newEnemy.health = TANK_INITIAL_HEALTH;
+        newEnemy.maxHealth = TANK_INITIAL_HEALTH;
+        newEnemy.bulletDamage = TANK_BULLET_DAMAGE;
+        newEnemy.collisionDamage = TANK_COLLISION_DAMAGE;
+        newEnemy.speedY = currentEnemySpeed * (0.7f + (rand() % 2) / 10.0f);
+        newEnemy.enemyStopY = rand() % 150 + 100;
+        newEnemy.fireCooldown = static_cast<Uint32>(1800 + (rand() % 2000));
+        break;
+    }
     enemies.push_back(newEnemy);
 }
 
 void enemyShoot() {
     Uint32 currentTime = SDL_GetTicks();
     for (auto& enemy : enemies) {
-        // Chỉ bắn khi đã dừng và đủ cooldown
-        if (enemy.yPos >= enemy.enemyStopY && currentTime > enemy.lastShotTime + enemy.fireCooldown) {
+        bool canShoot = false;
+        switch (enemy.type) {
+        case NORMAL: case TANK:
+            canShoot = (enemy.enemyStopY != -1 && enemy.yPos >= enemy.enemyStopY && currentTime > enemy.lastShotTime + enemy.fireCooldown);
+            break;
+        case STRAIGHT_SHOOTER:
+            canShoot = (currentTime > enemy.lastShotTime + enemy.fireCooldown);
+            break;
+        case WEAVER:
+            canShoot = false;
+            break;
+        }
+
+        if (canShoot) {
             float startX = enemy.xPos + enemy.rect.w / 2.0f;
             float startY = enemy.yPos + enemy.rect.h;
-            float targetX = player.xPos + player.rect.w / 2.0f; // Dùng xPos/yPos để có vị trí chính xác hơn
-            float targetY = player.yPos + player.rect.h / 2.0f;
-            float dirX = targetX - startX;
-            float dirY = targetY - startY;
-            float length = std::sqrt(dirX * dirX + dirY * dirY);
 
             float bulletSpeedX = 0.0f;
-            float bulletSpeedY = ENEMY_BULLET_SPEED; // Mặc định bắn thẳng xuống nếu không tính được
+            float bulletSpeedY = 0.0f;
+            float bulletSpeedMagnitude = ENEMY_BULLET_SPEED * (enemy.type == TANK ? 0.8f : 1.0f);
 
-            if (length > 0.0001f) { // Tránh chia cho 0
-                float invLength = 1.0f / length;
-                dirX *= invLength;
-                dirY *= invLength;
-                bulletSpeedX = dirX * ENEMY_BULLET_SPEED;
-                bulletSpeedY = dirY * ENEMY_BULLET_SPEED;
+            if (enemy.type == STRAIGHT_SHOOTER) {
+                bulletSpeedX = 0.0f;
+                bulletSpeedY = bulletSpeedMagnitude;
+            }
+            else { // NORMAL và TANK bắn về phía player
+                float targetX = player.xPos + player.rect.w / 2.0f;
+                float targetY = player.yPos + player.rect.h / 2.0f;
+                float dirX = targetX - startX;
+                float dirY = targetY - startY;
+                float length = std::sqrt(dirX * dirX + dirY * dirY);
+                if (length > 0.0001f) {
+                    float invLength = 1.0f / length;
+                    bulletSpeedX = dirX * invLength * bulletSpeedMagnitude;
+                    bulletSpeedY = dirY * invLength * bulletSpeedMagnitude;
+                }
+                else {
+                    bulletSpeedX = 0.0f; bulletSpeedY = bulletSpeedMagnitude;
+                }
             }
 
             Entity enemyBullet;
-            // Đặt texture đạn địch (có thể dùng chung bulletTexture nếu muốn)
             enemyBullet.texture = enemyBulletTexture ? enemyBulletTexture : bulletTexture;
             enemyBullet.rect = { (int)(startX - ENEMY_BULLET_WIDTH / 2.0f), (int)startY, ENEMY_BULLET_WIDTH, ENEMY_BULLET_HEIGHT };
             enemyBullet.xPos = (float)enemyBullet.rect.x;
             enemyBullet.yPos = (float)startY;
             enemyBullet.speedX = bulletSpeedX;
             enemyBullet.speedY = bulletSpeedY;
-
+            enemyBullet.damage = enemy.bulletDamage;
             enemyBullets.push_back(enemyBullet);
+
             enemy.lastShotTime = currentTime;
-            enemy.fireCooldown = static_cast<Uint32>(1000 + (rand() % 2500)); // Random cooldown mới
         }
     }
 }
 
-// <<< Phiên bản updateGame gốc đã sửa lỗi (từ prompt #1) >>>
 void updateGame(float deltaTime) {
-
-    // --- Cập nhật & Xóa Đạn Người Chơi (Ngoài màn hình) ---
-    for (int i = bullets.size() - 1; i >= 0; --i) { // Duyệt ngược
+    // --- 1. Cập nhật & Xóa Đạn Người Chơi ---
+    for (int i = (int)bullets.size() - 1; i >= 0; --i) {
         bullets[i].yPos -= PLAYER_BULLET_SPEED * deltaTime;
         bullets[i].rect.y = (int)bullets[i].yPos;
-        bullets[i].xPos = (float)bullets[i].rect.x; // Giữ xPos đồng bộ
+        bullets[i].xPos = (float)bullets[i].rect.x;
 
-        if (bullets[i].rect.y + bullets[i].rect.h < 0) { // Ngoài cạnh trên
-            bullets.erase(bullets.begin() + i); // Xóa ngay
+        if (bullets[i].rect.y + bullets[i].rect.h < 0) {
+            bullets.erase(bullets.begin() + i);
         }
     }
 
-    // --- Cập nhật & Xóa Kẻ Địch (Ngoài màn hình) ---
-    for (int i = enemies.size() - 1; i >= 0; --i) { // Duyệt ngược
-        // Cập nhật vị trí
-        if (enemies[i].yPos < enemies[i].enemyStopY) {
-            enemies[i].yPos += enemies[i].speedY * deltaTime;
-            if (enemies[i].yPos > enemies[i].enemyStopY) {
-                enemies[i].yPos = (float)enemies[i].enemyStopY;
+    // --- 2. Cập nhật vị trí Kẻ Địch & Xóa ---
+    for (int i = (int)enemies.size() - 1; i >= 0; --i) {
+        if (i >= (int)enemies.size()) continue;
+        Entity& enemy = enemies[i];
+
+        bool stopped = (enemy.enemyStopY != -1 && enemy.yPos >= enemy.enemyStopY);
+        if (!stopped) {
+            enemy.yPos += enemy.speedY * deltaTime;
+            if (enemy.enemyStopY != -1 && enemy.yPos > enemy.enemyStopY) {
+                enemy.yPos = (float)enemy.enemyStopY;
             }
-            enemies[i].rect.y = (int)enemies[i].yPos;
-            enemies[i].xPos = (float)enemies[i].rect.x; // Giữ xPos đồng bộ
         }
 
-        // Xóa nếu ra khỏi cạnh dưới
-        if (enemies[i].rect.y > SCREEN_HEIGHT) {
-            enemies.erase(enemies.begin() + i); // Xóa ngay
+        if (enemy.type == WEAVER) {
+            enemy.xPos = enemy.initialXPos + enemy.weaveAmplitude * sin(enemy.yPos * enemy.weaveFrequency);
+            enemy.xPos = std::max(0.0f, std::min((float)SCREEN_WIDTH - enemy.rect.w, enemy.xPos));
+        }
+        else {
+            enemy.xPos += enemy.speedX * deltaTime;
+            enemy.xPos = std::max(0.0f, std::min((float)SCREEN_WIDTH - enemy.rect.w, enemy.xPos));
+        }
+
+        enemy.rect.x = (int)enemy.xPos;
+        enemy.rect.y = (int)enemy.yPos;
+
+        if (enemy.rect.y > SCREEN_HEIGHT) {
+            enemies.erase(enemies.begin() + i);
         }
     }
 
-    // --- Va chạm: Đạn Người Chơi <-> Kẻ Địch (Xóa tức thì) ---
-    for (int i = bullets.size() - 1; i >= 0; --i) { // Duyệt ngược đạn
-        bool bulletRemoved = false; // Đánh dấu nếu đạn đã bị xóa trong vòng lặp trong
-        for (int j = enemies.size() - 1; j >= 0; --j) { // Duyệt ngược địch
-            // Kiểm tra va chạm
+    // --- 3. Va chạm: Đạn Người Chơi <-> Kẻ Địch ---
+    for (int i = (int)bullets.size() - 1; i >= 0; --i) {
+        if (i >= (int)bullets.size()) continue;
+        bool bulletHit = false;
+        for (int j = (int)enemies.size() - 1; j >= 0; --j) {
+            if (j >= (int)enemies.size()) continue;
             if (SDL_HasIntersection(&bullets[i].rect, &enemies[j].rect)) {
-                enemies.erase(enemies.begin() + j); // Xóa địch ngay
-                bullets.erase(bullets.begin() + i); // Xóa đạn ngay
-                currentScore += 10;
+                enemies[j].health -= player.bulletDamage;
+                bulletHit = true;
+                bullets.erase(bullets.begin() + i);
 
-                // Phát âm thanh nổ
-                if (explosionSound) {
-                    Mix_PlayChannel(-1, explosionSound, 0);
+                if (enemies[j].health <= 0) {
+                    int scoreBonus = 10;
+                    if (enemies[j].type == TANK) scoreBonus = 30;
+                    else if (enemies[j].type == WEAVER) scoreBonus = 15;
+                    currentScore += scoreBonus;
+                    if (musicOn && explosionSound) {
+                        Mix_PlayChannel(-1, explosionSound, 0);
+                    }
+                    enemies.erase(enemies.begin() + j);
                 }
-
-                bulletRemoved = true; // Đánh dấu đạn đã xóa
-                break; // Thoát vòng lặp địch, vì đạn này đã trúng và bị xóa
+                else {
+                    // TODO: Add hit effect?
+                }
+                break; // Đạn đã trúng, thoát vòng lặp địch
             }
         }
-        // if (bulletRemoved) continue; // Không cần thiết khi duyệt ngược
     }
 
-    // --- Cập nhật, Va chạm & Xóa Đạn Địch ---
-    bool playerIsHit = false;
-    for (int i = enemyBullets.size() - 1; i >= 0; --i) { // Duyệt ngược đạn địch
-        // Cập nhật vị trí đạn địch TRƯỚC
+    // --- 4. Va chạm: Kẻ Địch <-> Người Chơi ---
+    for (int i = (int)enemies.size() - 1; i >= 0; --i) {
+        if (i >= (int)enemies.size()) continue;
+        if (SDL_HasIntersection(&enemies[i].rect, &player.rect)) {
+            player.health -= enemies[i].collisionDamage;
+
+            int scoreBonus = 5;
+            if (enemies[i].type == TANK) scoreBonus = 15;
+            else if (enemies[i].type == WEAVER) scoreBonus = 10;
+            currentScore += scoreBonus;
+            if (musicOn && explosionSound) {
+                Mix_PlayChannel(-1, explosionSound, 0);
+            }
+            enemies.erase(enemies.begin() + i);
+
+            if (player.health <= 0) {
+                std::cout << "Player destroyed by collision! Game Over! Final Score: " << currentScore << std::endl;
+                if (currentScore > highScore) { highScore = currentScore; saveHighScore(); }
+                isPlayerDragging = false; isMovingToTarget = false; isFollowingMouse = false;
+                state = GAME_OVER;
+                return;
+            }
+        }
+    }
+
+    // --- 5. Cập nhật, Va chạm & Xóa Đạn Địch ---
+    for (int i = (int)enemyBullets.size() - 1; i >= 0; --i) {
+        if (i >= (int)enemyBullets.size()) continue;
+
         enemyBullets[i].xPos += enemyBullets[i].speedX * deltaTime;
         enemyBullets[i].yPos += enemyBullets[i].speedY * deltaTime;
         enemyBullets[i].rect.x = (int)enemyBullets[i].xPos;
         enemyBullets[i].rect.y = (int)enemyBullets[i].yPos;
 
-        // Kiểm tra va chạm với người chơi
-        if (!playerIsHit && SDL_HasIntersection(&enemyBullets[i].rect, &player.rect)) {
-            playerIsHit = true;
-            // Không break vội, vẫn cần kiểm tra off-screen cho các viên đạn khác
-        }
+        if (SDL_HasIntersection(&enemyBullets[i].rect, &player.rect)) {
+            player.health -= enemyBullets[i].damage;
+            enemyBullets.erase(enemyBullets.begin() + i);
 
-        // Kiểm tra và xóa nếu ra ngoài màn hình
-        if (enemyBullets[i].rect.x + enemyBullets[i].rect.w < 0 || enemyBullets[i].rect.x > SCREEN_WIDTH ||
-            enemyBullets[i].rect.y + enemyBullets[i].rect.h < 0 || enemyBullets[i].rect.y > SCREEN_HEIGHT)
-        {
-            enemyBullets.erase(enemyBullets.begin() + i); // Xóa ngay
+            if (player.health <= 0) {
+                std::cout << "Player destroyed by bullet! Game Over! Final Score: " << currentScore << std::endl;
+                if (currentScore > highScore) { highScore = currentScore; saveHighScore(); }
+                isPlayerDragging = false; isMovingToTarget = false; isFollowingMouse = false;
+                state = GAME_OVER;
+                return;
+            }
+        }
+        else if (enemyBullets[i].rect.x + enemyBullets[i].rect.w < 0 || enemyBullets[i].rect.x > SCREEN_WIDTH ||
+            enemyBullets[i].rect.y + enemyBullets[i].rect.h < 0 || enemyBullets[i].rect.y > SCREEN_HEIGHT) {
+            enemyBullets.erase(enemyBullets.begin() + i);
         }
     }
-
-    // --- Xử lý khi người chơi bị bắn trúng ---
-    if (playerIsHit) {
-        std::cout << "Player hit! Game Over! Final Score: " << currentScore << std::endl;
-        if (currentScore > highScore) {
-            std::cout << "New High Score: " << currentScore << std::endl;
-            highScore = currentScore;
-            saveHighScore();
-        }
-        isPlayerDragging = false;
-        isMovingToTarget = false; // <<< THÊM DÒNG NÀY VÀO ĐÂY
-        isFollowingMouse = false;
-        state = GAME_OVER;
-        return; // Thoát updateGame sớm
-    }
-    // Không còn vòng lặp dọn dẹp ở cuối nữa
 }
 
-void cleanup() { // <<< Bỏ renderer, font
-    if (renderer) SDL_DestroyRenderer(renderer); // <<< Dùng renderer global
+void cleanup() {
+    if (renderer) SDL_DestroyRenderer(renderer);
     if (window) SDL_DestroyWindow(window);
     SDL_DestroyTexture(playerTexture);
     SDL_DestroyTexture(enemyTexture);
@@ -396,12 +558,15 @@ void cleanup() { // <<< Bỏ renderer, font
     SDL_DestroyTexture(backgroundTexture);
     SDL_DestroyTexture(gameBackgroundTexture);
     SDL_DestroyTexture(gameOverBackgroundTexture);
-    if (font) TTF_CloseFont(font); // <<< Dùng font global
+    SDL_DestroyTexture(enemyTextureStraight);
+    SDL_DestroyTexture(enemyTextureWeave);
+    SDL_DestroyTexture(enemyTextureTank);
+    if (font) TTF_CloseFont(font);
     Mix_FreeMusic(bgMusic);
+    Mix_FreeMusic(gameMusic);
     Mix_FreeChunk(startSound);
     Mix_FreeChunk(explosionSound);
 
-    // Reset con trỏ về null
     renderer = nullptr;
     window = nullptr;
     font = nullptr;
@@ -411,16 +576,14 @@ void cleanup() { // <<< Bỏ renderer, font
     backgroundTexture = nullptr;
     gameBackgroundTexture = nullptr;
     gameOverBackgroundTexture = nullptr;
+    enemyTextureStraight = nullptr;
+    enemyTextureWeave = nullptr;
+    enemyTextureTank = nullptr;
     bgMusic = nullptr;
+    gameMusic = nullptr;
     startSound = nullptr;
     explosionSound = nullptr;
 }
-
-//// --- Thêm các biến toàn cục mới gần các biến toàn cục khác ---
-//bool isPlayerDragging = false;
-//bool isMovingToTarget = false; // Cờ báo đang tự động di chuyển
-//float targetMoveX = 0.0f;      // Tọa độ X đích
-//float targetMoveY = 0.0f;      // Tọa độ Y đích
 
 // --- Main Function ---
 int main(int argc, char* argv[]) {
@@ -480,60 +643,64 @@ int main(int argc, char* argv[]) {
     playerTexture = loadTexture("player.png");
     enemyTexture = loadTexture("enemy.png");
     bulletTexture = loadTexture("bullet.png");
-    // enemyBulletTexture = loadTexture("enemy_bullet.png"); // Nếu có texture đạn địch riêng
+    enemyTextureStraight = loadTexture("enemy_straight.png");
+    enemyTextureWeave = loadTexture("enemy_weave.png");
+    enemyTextureTank = loadTexture("enemy_tank.png");
     bgMusic = Mix_LoadMUS("background.mp3");
-    startSound = Mix_LoadWAV("start_sound.wav"); // Âm thanh này hiện không dùng, có thể xóa nếu muốn
+    gameMusic = Mix_LoadMUS("game_music.mp3");
+    startSound = Mix_LoadWAV("start_sound.wav");
     explosionSound = Mix_LoadWAV("explosion.wav");
 
     // --- Check Resource Loading ---
     if (!backgroundTexture || !gameBackgroundTexture || !gameOverBackgroundTexture ||
         !playerTexture || !enemyTexture || !bulletTexture ||
-        !bgMusic || !explosionSound /* || !startSound nếu bạn giữ lại */) {
+        !enemyTextureStraight || !enemyTextureWeave || !enemyTextureTank ||
+        !bgMusic || !gameMusic || !explosionSound) {
         std::cerr << "Failed to load one or more resources!" << std::endl;
-        cleanup(); // Gọi cleanup đã sửa
+        cleanup();
         Mix_CloseAudio(); TTF_Quit(); IMG_Quit(); SDL_Quit();
         return -1;
     }
 
-    if (musicOn && bgMusic) { Mix_PlayMusic(bgMusic, -1); }
+    // --- PHÁT NHẠC MENU BAN ĐẦU ---
+    if (musicOn && bgMusic) {
+        Mix_PlayMusic(bgMusic, -1);
+    }
 
     // --- Initialize Player ---
     player.rect = { SCREEN_WIDTH / 2 - PLAYER_WIDTH / 2, SCREEN_HEIGHT - 100, PLAYER_WIDTH, PLAYER_HEIGHT };
     player.texture = playerTexture;
     player.xPos = (float)player.rect.x;
     player.yPos = (float)player.rect.y;
-    player.lastShotTime = 0; // Khởi tạo thời gian bắn cho auto-fire
+    player.health = PLAYER_INITIAL_HEALTH;
+    player.maxHealth = PLAYER_INITIAL_HEALTH;
+    player.bulletDamage = PLAYER_BULLET_DAMAGE;
+    player.lastShotTime = 0;
 
     // --- Game Loop Variables ---
     SDL_Event event;
     Uint32 lastFrameTime = SDL_GetTicks();
     running = true;
 
-
     // --- Main Game Loop ---
     while (running) {
         // --- Delta Time ---
         Uint32 currentFrameTime = SDL_GetTicks();
         Uint32 frameTicks = SDL_TICKS_PASSED(currentFrameTime, lastFrameTime);
-
-        // <<< KHAI BÁO deltaTime Ở ĐÂY >>>
-        float deltaTime = 0.0f; // Khai báo và khởi tạo giá trị mặc định
-
-        // <<< QUAN TRỌNG: Chỉ cập nhật lastFrameTime nếu game KHÔNG bị PAUSE >>>
-        // Nếu không, deltaTime sẽ tính cả thời gian pause khi resume
+        float deltaTime = 0.0f;
         if (state != PAUSED) {
             deltaTime = frameTicks / 1000.0f;
-            lastFrameTime = currentFrameTime; // Cập nhật chỉ khi không pause
-            if (deltaTime > 0.1f) { deltaTime = 0.1f; } // Giới hạn delta time
+            lastFrameTime = currentFrameTime;
+            if (deltaTime > 0.1f) { deltaTime = 0.1f; }
         }
         else {
-            deltaTime = 0.0f; // Khi pause, không có thời gian trôi qua trong game
-            // Không cập nhật lastFrameTime ở đây
+            deltaTime = 0.0f;
         }
+
         // --- Input ---
-        // Lấy trạng thái chuột MỘT LẦN cho cả frame (dùng cho kéo thả, hover)
         int mouseX, mouseY;
         SDL_GetMouseState(&mouseX, &mouseY);
+        SDL_Point mousePointCheckHover = { mouseX, mouseY };
 
         // Xử lý hàng đợi sự kiện
         while (SDL_PollEvent(&event)) {
@@ -544,7 +711,6 @@ int main(int argc, char* argv[]) {
             // --- Xử lý nhấn chuột ---
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
-                    // Lấy tọa độ chính xác tại thời điểm click cho logic click
                     SDL_Point mousePoint = { event.button.x, event.button.y };
 
                     if (state == MENU) {
@@ -556,32 +722,42 @@ int main(int argc, char* argv[]) {
                                     currentEnemySpeed = INITIAL_ENEMY_SPEED;
                                     player.rect = { SCREEN_WIDTH / 2 - PLAYER_WIDTH / 2, SCREEN_HEIGHT - 100, PLAYER_WIDTH, PLAYER_HEIGHT };
                                     player.xPos = (float)player.rect.x; player.yPos = (float)player.rect.y;
-                                    player.lastShotTime = 0; // Reset thời gian bắn
+                                    player.lastShotTime = 0;
                                     lastEnemySpawnTime = SDL_GetTicks();
-                                    if (Mix_PlayingMusic()) Mix_HaltMusic(); // Tắt nhạc menu (nếu đang bật)
-                                    isPlayerDragging = false;   // Reset kéo
-                                    isMovingToTarget = false; // Reset di chuyển tự động
-                                    isFollowingMouse = false;
-                                    state = GAME;             // Chuyển sang chơi
+                                    player.health = player.maxHealth; // <<< Sửa lỗi thiếu maxHealth
+                                    Mix_HaltMusic();
+                                    if (musicOn && gameMusic) {
+                                        Mix_PlayMusic(gameMusic, -1);
+                                    }
+                                    isPlayerDragging = false; isMovingToTarget = false; isFollowingMouse = false;
+                                    state = GAME;
+                                    lastFrameTime = SDL_GetTicks(); // <<< Reset time khi bắt đầu game mới
                                 }
                                 else if (i == 1) { // Continue
-                                    std::cout << "Continue button clicked (Not implemented)" << std::endl;
+                                    // Chức năng chưa thêm vào phiên bản này
+                                    std::cout << "Continue button clicked (Not implemented in this version)" << std::endl;
                                 }
                                 else if (i == 2) { // Music On/Off
                                     musicOn = !musicOn;
                                     buttons[i].text = musicOn ? "Music: On" : "Music: Off";
+                                    pauseMenuButtons[1].text = musicOn ? "Mute Sound" : "Unmute Sound";
                                     if (musicOn) {
+                                        Mix_Resume(-1);
                                         if (Mix_PausedMusic()) Mix_ResumeMusic();
-                                        else if (bgMusic && !Mix_PlayingMusic()) Mix_PlayMusic(bgMusic, -1);
+                                        else if (!Mix_PlayingMusic()) {
+                                            if (state == MENU && bgMusic) Mix_PlayMusic(bgMusic, -1);
+                                            else if ((state == GAME || state == PAUSED) && gameMusic) Mix_PlayMusic(gameMusic, -1);
+                                        }
                                     }
-                                    else if (Mix_PlayingMusic()) {
-                                        Mix_PauseMusic();
+                                    else {
+                                        if (Mix_PlayingMusic()) Mix_PauseMusic();
+                                        Mix_Pause(-1);
                                     }
                                 }
                                 else if (i == 3) { // Exit Game
                                     running = false;
                                 }
-                                break; // Thoát vòng lặp nút khi đã click
+                                break;
                             }
                         }
                     }
@@ -594,49 +770,36 @@ int main(int argc, char* argv[]) {
                                     currentEnemySpeed = INITIAL_ENEMY_SPEED;
                                     player.rect = { SCREEN_WIDTH / 2 - PLAYER_WIDTH / 2, SCREEN_HEIGHT - 100, PLAYER_WIDTH, PLAYER_HEIGHT };
                                     player.xPos = (float)player.rect.x; player.yPos = (float)player.rect.y;
-                                    player.lastShotTime = 0; // Reset thời gian bắn
+                                    player.lastShotTime = 0;
                                     lastEnemySpawnTime = SDL_GetTicks();
-                                    // Không cần xử lý nhạc ở đây, vì không có nhạc game over
-                                    isPlayerDragging = false;   // Reset kéo
-                                    isMovingToTarget = false; // Reset di chuyển tự động
-                                    isFollowingMouse = false;
-                                    state = GAME;             // Chuyển sang chơi
+                                    player.health = player.maxHealth; // <<< Sửa lỗi thiếu maxHealth
+                                    isPlayerDragging = false; isMovingToTarget = false; isFollowingMouse = false;
+                                    Mix_HaltMusic();
+                                    if (musicOn && gameMusic) {
+                                        Mix_PlayMusic(gameMusic, -1);
+                                    }
+                                    state = GAME;
+                                    lastFrameTime = SDL_GetTicks(); // <<< Reset time khi chơi lại
                                 }
                                 else if (i == 1) { // Main Menu
-                                    isPlayerDragging = false;   // Reset kéo
-                                    isMovingToTarget = false; // Reset di chuyển tự động
-                                    isFollowingMouse = false;
-                                    state = MENU;             // Về menu
-                                    // Bật lại nhạc nền nếu cần
-                                    if (bgMusic && musicOn && !Mix_PlayingMusic()) {
+                                    isPlayerDragging = false; isMovingToTarget = false; isFollowingMouse = false;
+                                    state = MENU;
+                                    Mix_HaltMusic();
+                                    if (musicOn && bgMusic) {
                                         Mix_PlayMusic(bgMusic, -1);
                                     }
                                 }
-                                break; // Thoát vòng lặp nút khi đã click
+                                break;
                             }
                         }
                     }
-                    else if (state == GAME || state == PAUSED) { // <<< THAY ĐỔI: Cho phép click Pause khi đang Game hoặc Paused
-                        // KIỂM TRA CLICK NÚT PAUSE TRƯỚC
+                    else if (state == GAME) {
                         if (SDL_PointInRect(&mousePoint, &pauseButton.rect)) {
-                            if (state == GAME) {
-                                state = PAUSED;
-                                pauseButton.text = "Resume"; // Đổi chữ nút (tùy chọn)
-                                // Quan trọng: Không cần reset lastFrameTime khi pause
-                            }
-                            else { // state == PAUSED
-                                state = GAME;
-                                pauseButton.text = "Pause"; // Đổi chữ nút lại (tùy chọn)
-                                // <<< QUAN TRỌNG: Đặt lại lastFrameTime NGAY KHI RESUME >>>
-                                // Để tránh deltaTime lớn ở frame đầu tiên sau khi resume
-                                lastFrameTime = SDL_GetTicks();
-                            }
+                            state = PAUSED;
+                            pauseMenuButtons[1].text = musicOn ? "Mute Sound" : "Unmute Sound";
                         }
-                        // Nếu không click vào nút Pause VÀ đang ở trạng thái GAME, mới xử lý click player/di chuyển
-                        else if (state == GAME) {
-                            // TẮT trạng thái 'following' khi có click mới (nếu không phải click nút pause)
+                        else {
                             isFollowingMouse = false;
-
                             if (SDL_PointInRect(&mousePoint, &player.rect)) {
                                 isPlayerDragging = true;
                                 isMovingToTarget = false;
@@ -650,43 +813,80 @@ int main(int argc, char* argv[]) {
                                 targetMoveY = std::max(0.0f, std::min((float)SCREEN_HEIGHT - player.rect.h, targetMoveY));
                             }
                         }
-                    } // end left click
-                } // end mouse down
+                    }
+                    else if (state == PAUSED) {
+                        for (int i = 0; i < PAUSE_MENU_BUTTON_COUNT; ++i) {
+                            if (pauseMenuButtons[i].hovered) {
+                                if (i == 0) { // Continue
+                                    state = GAME;
+                                    lastFrameTime = SDL_GetTicks();
+                                }
+                                else if (i == 1) { // Mute/Unmute Sound
+                                    musicOn = !musicOn;
+                                    pauseMenuButtons[i].text = musicOn ? "Mute Sound" : "Unmute Sound";
+                                    buttons[2].text = musicOn ? "Music: On" : "Music: Off";
+                                    if (musicOn) {
+                                        Mix_Resume(-1);
+                                        if (Mix_PausedMusic()) Mix_ResumeMusic();
+                                        else if (!Mix_PlayingMusic() && gameMusic) Mix_PlayMusic(gameMusic, -1);
+                                    }
+                                    else {
+                                        if (Mix_PlayingMusic()) Mix_PauseMusic();
+                                        Mix_Pause(-1);
+                                    }
+                                }
+                                else if (i == 2) { // Save & Exit to Menu
+                                    // Chức năng chưa thêm vào phiên bản này
+                                    std::cout << "Save & Exit clicked (Not implemented in this version)" << std::endl;
+                                    // Vẫn thoát ra menu như cũ
+                                    if (currentScore > highScore) {
+                                        highScore = currentScore;
+                                        saveHighScore();
+                                    }
+                                    Mix_HaltMusic();
+                                    isPlayerDragging = false; isMovingToTarget = false; isFollowingMouse = false;
+                                    state = MENU;
+                                    if (musicOn && bgMusic) {
+                                        Mix_PlayMusic(bgMusic, -1);
+                                    }
+                                    buttons[2].text = musicOn ? "Music: On" : "Music: Off";
+                                }
+                                break;
+                            }
+                        }
+                        // Optional click pause icon to resume
+                        // if (pauseButton.hovered && SDL_PointInRect(&mousePoint, &pauseButton.rect)) {
+                        //    state = GAME;
+                        //    lastFrameTime = SDL_GetTicks();
+                        // }
+                    }
+                }
             }
             // --- Xử lý nhả chuột ---
             else if (event.type == SDL_MOUSEBUTTONUP) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
-                    // Chỉ xử lý nhả chuột liên quan đến player nếu đang chơi
-                    if (state == GAME) { // <<< THÊM KIỂM TRA STATE
+                    if (state == GAME) {
                         if (isPlayerDragging) {
                             isPlayerDragging = false;
-                            isFollowingMouse = false; // Có thể cần hoặc không tùy logic mong muốn sau khi kéo
+                            isFollowingMouse = false;
                         }
-                        // Không cần làm gì với isMovingToTarget khi nhả chuột
                     }
                 }
-            } // end mouse up
+            }
         } // end poll event
 
-        // --- Update --- //
-
+        // --- Update ---
         if (state == GAME) {
-            // --- Cập nhật vị trí người chơi ---
+            // Cập nhật vị trí người chơi
             if (isPlayerDragging) {
-                // 1. Kéo thả: Theo chuột ngay lập tức
-                float targetX = (float)mouseX - player.rect.w / 2.0f;
-                float targetY = (float)mouseY - player.rect.h / 2.0f;
-                player.xPos = targetX;
-                player.yPos = targetY;
+                player.xPos = (float)mouseX - player.rect.w / 2.0f;
+                player.yPos = (float)mouseY - player.rect.h / 2.0f;
             }
             else if (isMovingToTarget) {
-                // 2. Nếu không kéo, kiểm tra Di chuyển tự động
                 float dirX = targetMoveX - player.xPos;
                 float dirY = targetMoveY - player.yPos;
                 float dist = std::sqrt(dirX * dirX + dirY * dirY);
-
-                bool reachedTarget = false; // Cờ tạm để biết đã đến đích chưa
-
+                bool reachedTarget = false;
                 if (dist < 2.0f) {
                     reachedTarget = true;
                 }
@@ -700,33 +900,24 @@ int main(int argc, char* argv[]) {
                         player.yPos += (dirY / dist) * moveAmount;
                     }
                 }
-
-                // KIỂM TRA NẾU ĐÃ ĐẾN ĐÍCH TRONG FRAME NÀY
                 if (reachedTarget) {
-                    player.xPos = targetMoveX; // Snap vào đích
+                    player.xPos = targetMoveX;
                     player.yPos = targetMoveY;
-                    isMovingToTarget = false; // Dừng di chuyển tự động
-                    isFollowingMouse = true;  // <<< BẮT ĐẦU ĐI THEO CHUỘT >>>
+                    isMovingToTarget = false;
+                    isFollowingMouse = true;
                 }
-
             }
             else if (isFollowingMouse) {
-                // 3. Nếu không kéo và không tự đi, kiểm tra Đi theo chuột
-                // Logic giống hệt kéo thả (đặt vị trí theo chuột)
-                float targetX = (float)mouseX - player.rect.w / 2.0f;
-                float targetY = (float)mouseY - player.rect.h / 2.0f;
-                player.xPos = targetX;
-                player.yPos = targetY;
+                player.xPos = (float)mouseX - player.rect.w / 2.0f;
+                player.yPos = (float)mouseY - player.rect.h / 2.0f;
             }
-            // 4. Nếu cả 3 cờ đều false -> Đứng yên
 
-            // Áp dụng giới hạn màn hình và cập nhật rect sau khi vị trí được xác định
             player.xPos = std::max(0.0f, std::min((float)SCREEN_WIDTH - player.rect.w, player.xPos));
             player.yPos = std::max(0.0f, std::min((float)SCREEN_HEIGHT - player.rect.h, player.yPos));
             player.rect.x = (int)player.xPos;
             player.rect.y = (int)player.yPos;
 
-            // --- Bắn tự động ---
+            // Bắn tự động
             Uint32 currentTime = SDL_GetTicks();
             if (currentTime > player.lastShotTime + PLAYER_AUTO_FIRE_COOLDOWN) {
                 Entity newBullet;
@@ -734,75 +925,85 @@ int main(int argc, char* argv[]) {
                 newBullet.texture = bulletTexture;
                 newBullet.xPos = (float)newBullet.rect.x;
                 newBullet.yPos = (float)player.rect.y;
+                // Gán damage cho đạn player
+                newBullet.damage = player.bulletDamage; // <<< Thêm dòng này
                 bullets.push_back(newBullet);
                 player.lastShotTime = currentTime;
             }
 
-            // --- Cập nhật logic game khác ---
-            // Spawn kẻ địch
-            // (Lưu ý: Có thể dùng lại biến currentTime ở trên thay vì gọi lại SDL_GetTicks())
+            // Cập nhật logic game khác
             if (currentTime > lastEnemySpawnTime + ENEMY_SPAWN_INTERVAL) {
                 spawnEnemy();
                 lastEnemySpawnTime = currentTime;
             }
-            // Kẻ địch bắn
             enemyShoot();
-            // Cập nhật va chạm, di chuyển đạn/kẻ địch,... và kiểm tra game over
-            updateGame(deltaTime); // updateGame sẽ tự đổi state nếu game over
-
+            updateGame(deltaTime); // Gọi hàm update chính
         }
-        else { // Nếu không phải state GAME (là MENU hoặc GAME_OVER)
-            // Đảm bảo reset các trạng thái điều khiển
+        else {
             isPlayerDragging = false;
             isMovingToTarget = false;
-            isFollowingMouse = false; // <<< Reset thêm cờ này
+            isFollowingMouse = false;
         }
 
-        // --- Cập nhật trạng thái hover của nút (cho MENU và GAME_OVER) ---
-        // (Phần này có thể đặt trong if state==MENU hoặc if state==GAME_OVER nếu muốn tối ưu chút)
+        // --- Cập nhật trạng thái hover của nút ---
         if (state == MENU) {
             for (int i = 0; i < BUTTON_COUNT; i++) {
-                buttons[i].hovered = (mouseX >= buttons[i].rect.x && mouseX <= buttons[i].rect.x + buttons[i].rect.w &&
-                    mouseY >= buttons[i].rect.y && mouseY <= buttons[i].rect.y + buttons[i].rect.h);
+                buttons[i].hovered = SDL_PointInRect(&mousePointCheckHover, &buttons[i].rect);
+                // Nút Continue chưa làm nên không cần xử lý disable/hover đặc biệt
             }
+            for (int i = 0; i < GAMEOVER_BUTTON_COUNT; ++i) gameOverButtons[i].hovered = false;
+            for (int i = 0; i < PAUSE_MENU_BUTTON_COUNT; ++i) pauseMenuButtons[i].hovered = false;
+            pauseButton.hovered = false;
         }
         else if (state == GAME_OVER) {
             for (int i = 0; i < GAMEOVER_BUTTON_COUNT; i++) {
-                gameOverButtons[i].hovered = (mouseX >= gameOverButtons[i].rect.x && mouseX <= gameOverButtons[i].rect.x + gameOverButtons[i].rect.w &&
-                    mouseY >= gameOverButtons[i].rect.y && mouseY <= gameOverButtons[i].rect.y + gameOverButtons[i].rect.h);
+                gameOverButtons[i].hovered = SDL_PointInRect(&mousePointCheckHover, &gameOverButtons[i].rect);
             }
+            for (int i = 0; i < BUTTON_COUNT; ++i) buttons[i].hovered = false;
+            for (int i = 0; i < PAUSE_MENU_BUTTON_COUNT; ++i) pauseMenuButtons[i].hovered = false;
+            pauseButton.hovered = false;
         }
-        else if (state == GAME || state == PAUSED) { // <<< THAY ĐỔI: Cập nhật hover nút Pause khi GAME hoặc PAUSED
-            pauseButton.hovered = (mouseX >= pauseButton.rect.x && mouseX <= pauseButton.rect.x + pauseButton.rect.w &&
-                mouseY >= pauseButton.rect.y && mouseY <= pauseButton.rect.y + pauseButton.rect.h);
+        else if (state == GAME) {
+            pauseButton.hovered = SDL_PointInRect(&mousePointCheckHover, &pauseButton.rect);
+            for (int i = 0; i < BUTTON_COUNT; ++i) buttons[i].hovered = false;
+            for (int i = 0; i < GAMEOVER_BUTTON_COUNT; ++i) gameOverButtons[i].hovered = false;
+            for (int i = 0; i < PAUSE_MENU_BUTTON_COUNT; ++i) pauseMenuButtons[i].hovered = false;
+        }
+        else if (state == PAUSED) {
+            pauseButton.hovered = SDL_PointInRect(&mousePointCheckHover, &pauseButton.rect);
+            for (int i = 0; i < PAUSE_MENU_BUTTON_COUNT; ++i) {
+                pauseMenuButtons[i].hovered = SDL_PointInRect(&mousePointCheckHover, &pauseMenuButtons[i].rect);
+            }
+            for (int i = 0; i < BUTTON_COUNT; ++i) buttons[i].hovered = false;
+            for (int i = 0; i < GAMEOVER_BUTTON_COUNT; ++i) gameOverButtons[i].hovered = false;
         }
 
-
-        // --- Render --- //
+        // --- Render ---
         SDL_RenderClear(renderer);
 
-        // Vẽ nền theo state
+        // --- 1. Vẽ Nền theo State ---
         if (state == MENU) {
             if (backgroundTexture) SDL_RenderCopy(renderer, backgroundTexture, NULL, NULL);
         }
         else if (state == GAME_OVER) {
             if (gameOverBackgroundTexture) SDL_RenderCopy(renderer, gameOverBackgroundTexture, NULL, NULL);
         }
-        else { // state == GAME or state == PAUSED
+        else { // GAME or PAUSED
             if (gameBackgroundTexture) SDL_RenderCopy(renderer, gameBackgroundTexture, NULL, NULL);
         }
 
+        // --- 2. Khai báo màu ---
         SDL_Color white = { 255, 255, 255, 255 };
         SDL_Color yellow = { 255, 255, 0, 255 };
-        SDL_Color gray = { 128, 128, 128, 150 }; // Màu xám trong suốt cho overlay
+        SDL_Color gray = { 0, 0, 0, 150 };
 
-        // Vẽ nội dung theo state
+        // --- 3. Vẽ Nội dung chồng lên Nền theo State ---
         if (state == MENU) {
             for (int i = 0; i < BUTTON_COUNT; i++) renderButton(buttons[i]);
             renderText("High Score: " + std::to_string(highScore), 10, 10, white);
         }
         else if (state == GAME_OVER) {
-            int textW = 0, textH = 0; // Khởi tạo để tránh lỗi nếu font null
+            int textW = 0, textH = 0;
             std::string gameOverMsg = "Game Over!";
             if (font) TTF_SizeText(font, gameOverMsg.c_str(), &textW, &textH);
             renderText(gameOverMsg, SCREEN_WIDTH / 2 - textW / 2, 150, yellow);
@@ -817,42 +1018,45 @@ int main(int argc, char* argv[]) {
 
             for (int i = 0; i < GAMEOVER_BUTTON_COUNT; i++) renderButton(gameOverButtons[i]);
         }
-        else {
-            // Vẽ các đối tượng game
+        else { // GAME or PAUSED
             if (player.texture) SDL_RenderCopy(renderer, player.texture, NULL, &player.rect);
             for (auto& enemy : enemies) if (enemy.texture) SDL_RenderCopy(renderer, enemy.texture, NULL, &enemy.rect);
             for (auto& bullet : bullets) if (bullet.texture) SDL_RenderCopy(renderer, bullet.texture, NULL, &bullet.rect);
             for (auto& bullet : enemyBullets) if (bullet.texture) SDL_RenderCopy(renderer, bullet.texture, NULL, &bullet.rect);
 
-            // Vẽ điểm
             renderText("Score: " + std::to_string(currentScore), 10, 10, white);
 
-            // <<< THÊM MỚI: Vẽ nút Pause >>>
+            int healthBarX = 10, healthBarY = 40, healthBarW = 200, healthBarH = 20;
+            float healthPercent = (player.health > 0) ? (float)player.health / player.maxHealth : 0.0f;
+            int currentHealthBarW = (int)(healthBarW * healthPercent);
+            if (currentHealthBarW < 0) currentHealthBarW = 0;
+            SDL_Rect healthBarBgRect = { healthBarX, healthBarY, healthBarW, healthBarH };
+            SDL_SetRenderDrawColor(renderer, 100, 0, 0, 255); SDL_RenderFillRect(renderer, &healthBarBgRect);
+            SDL_Rect currentHealthRect = { healthBarX, healthBarY, currentHealthBarW, healthBarH };
+            SDL_SetRenderDrawColor(renderer, 0, 200, 0, 255); SDL_RenderFillRect(renderer, &currentHealthRect);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); SDL_RenderDrawRect(renderer, &healthBarBgRect);
+
             renderButton(pauseButton);
 
-            // <<< THÊM MỚI: Vẽ overlay và chữ "Paused" nếu đang pause >>>
             if (state == PAUSED) {
-                // Vẽ một hình chữ nhật màu xám bán trong suốt phủ lên màn hình
-                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND); // Bật chế độ blend
+                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(renderer, gray.r, gray.g, gray.b, gray.a);
                 SDL_Rect pauseOverlayRect = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
                 SDL_RenderFillRect(renderer, &pauseOverlayRect);
-                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE); // Tắt chế độ blend
+                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 
-                // Vẽ chữ "Paused" ở giữa
-                int textW = 0, textH = 0;
-                std::string pauseMsg = "Paused";
-                if (font) TTF_SizeText(font, pauseMsg.c_str(), &textW, &textH);
-                renderText(pauseMsg, SCREEN_WIDTH / 2 - textW / 2, SCREEN_HEIGHT / 2 - textH / 2, yellow);
+                for (int i = 0; i < PAUSE_MENU_BUTTON_COUNT; ++i) {
+                    renderButton(pauseMenuButtons[i]);
+                }
             }
         }
-        SDL_RenderPresent(renderer); // Hiển thị tất cả lên màn hình
 
-    } // <<< Kết thúc while(running)
+        // --- 4. Hiển thị mọi thứ lên màn hình ---
+        SDL_RenderPresent(renderer);
+    } // --- Kết thúc while(running) ---
 
     // --- Cleanup ---
-    cleanup(); // Dọn dẹp texture, sound chunk, font, renderer, window
-    // Dọn dẹp các subsystem SDL theo thứ tự ngược lại khởi tạo
+    cleanup();
     Mix_CloseAudio();
     TTF_Quit();
     IMG_Quit();
