@@ -5,6 +5,34 @@
     {
       "AbsoluteMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|D:\\Code\\CodeGame\\CodeGame\\main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|solutionrelative:CodeGame\\main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|D:\\Code\\CodeGame\\CodeGame\\Globals.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|solutionrelative:CodeGame\\Globals.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|D:\\Code\\CodeGame\\CodeGame\\GameLogic.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|solutionrelative:CodeGame\\GameLogic.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|D:\\Code\\CodeGame\\CodeGame\\Constants.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|solutionrelative:CodeGame\\Constants.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|D:\\Code\\CodeGame\\CodeGame\\Structs.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|solutionrelative:CodeGame\\Structs.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|D:\\Code\\CodeGame\\CodeGame\\Utils.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|solutionrelative:CodeGame\\Utils.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|D:\\Code\\CodeGame\\CodeGame\\GameLogic.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|solutionrelative:CodeGame\\GameLogic.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|D:\\Code\\CodeGame\\CodeGame\\Utils.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{019DE1FC-6156-4EB4-B04C-000A66891869}|CodeGame\\CodeGame.vcxproj|solutionrelative:CodeGame\\Utils.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
@@ -14,11 +42,102 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 8,
           "Children": [
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "GameLogic.cpp",
+              "DocumentMoniker": "D:\\Code\\CodeGame\\CodeGame\\GameLogic.cpp",
+              "RelativeDocumentMoniker": "CodeGame\\GameLogic.cpp",
+              "ToolTip": "D:\\Code\\CodeGame\\CodeGame\\GameLogic.cpp",
+              "RelativeToolTip": "CodeGame\\GameLogic.cpp",
+              "ViewState": "AgIAACEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-03-29T21:06:07.401Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "Utils.cpp",
+              "DocumentMoniker": "D:\\Code\\CodeGame\\CodeGame\\Utils.cpp",
+              "RelativeDocumentMoniker": "CodeGame\\Utils.cpp",
+              "ToolTip": "D:\\Code\\CodeGame\\CodeGame\\Utils.cpp",
+              "RelativeToolTip": "CodeGame\\Utils.cpp",
+              "ViewState": "AgIAACEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-03-29T20:59:23.715Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Utils.h",
+              "DocumentMoniker": "D:\\Code\\CodeGame\\CodeGame\\Utils.h",
+              "RelativeDocumentMoniker": "CodeGame\\Utils.h",
+              "ToolTip": "D:\\Code\\CodeGame\\CodeGame\\Utils.h",
+              "RelativeToolTip": "CodeGame\\Utils.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAPAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-03-29T20:44:08.059Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "GameLogic.h",
+              "DocumentMoniker": "D:\\Code\\CodeGame\\CodeGame\\GameLogic.h",
+              "RelativeDocumentMoniker": "CodeGame\\GameLogic.h",
+              "ToolTip": "D:\\Code\\CodeGame\\CodeGame\\GameLogic.h",
+              "RelativeToolTip": "CodeGame\\GameLogic.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-03-29T20:43:52.439Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Globals.h",
+              "DocumentMoniker": "D:\\Code\\CodeGame\\CodeGame\\Globals.h",
+              "RelativeDocumentMoniker": "CodeGame\\Globals.h",
+              "ToolTip": "D:\\Code\\CodeGame\\CodeGame\\Globals.h",
+              "RelativeToolTip": "CodeGame\\Globals.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAE8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-03-29T20:43:39.034Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Structs.h",
+              "DocumentMoniker": "D:\\Code\\CodeGame\\CodeGame\\Structs.h",
+              "RelativeDocumentMoniker": "CodeGame\\Structs.h",
+              "ToolTip": "D:\\Code\\CodeGame\\CodeGame\\Structs.h",
+              "RelativeToolTip": "CodeGame\\Structs.h",
+              "ViewState": "AgIAABUAAAAAAAAAAAAAADcAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-03-29T20:43:05.107Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Constants.h",
+              "DocumentMoniker": "D:\\Code\\CodeGame\\CodeGame\\Constants.h",
+              "RelativeDocumentMoniker": "CodeGame\\Constants.h",
+              "ToolTip": "D:\\Code\\CodeGame\\CodeGame\\Constants.h",
+              "RelativeToolTip": "CodeGame\\Constants.h",
+              "ViewState": "AgIAADwAAAAAAAAAAAAAAF0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-03-29T20:42:48.512Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -28,7 +147,7 @@
               "RelativeDocumentMoniker": "CodeGame\\main.cpp",
               "ToolTip": "D:\\Code\\CodeGame\\CodeGame\\main.cpp",
               "RelativeToolTip": "CodeGame\\main.cpp",
-              "ViewState": "AgIAAKUAAAAAAAAAAAAAAMAAAAAjAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAHUCAAA7AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-03-10T02:47:39.151Z",
               "EditorCaption": ""

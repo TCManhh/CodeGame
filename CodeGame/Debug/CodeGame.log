@@ -1,2 +1,5 @@
-﻿  main.cpp
+﻿  GameLogic.cpp
+  Utils.cpp
+  main.cpp
+  Generating Code...
   CodeGame.vcxproj -> D:\Code\CodeGame\Debug\CodeGame.exe
