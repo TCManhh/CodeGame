@@ -29,14 +29,78 @@ const float INITIAL_ENEMY_SPEED = 1000.0f;
 const float ENEMY_SPEED_INCREMENT = 100.0f;
 
 // --- Kích thước gốc ---
-const int PLAYER_WIDTH = 50;
-const int PLAYER_HEIGHT = 50;
-const int ENEMY_WIDTH = 50;
-const int ENEMY_HEIGHT = 50;
-const int PLAYER_BULLET_WIDTH = 10;
-const int PLAYER_BULLET_HEIGHT = 20;
-const int ENEMY_BULLET_WIDTH = 10;
-const int ENEMY_BULLET_HEIGHT = 20;
+// const int ENEMY_WIDTH = 60; // <<< Có thể bỏ hoặc comment đi nếu không dùng chung nữa
+// const int ENEMY_HEIGHT = 60; // <<< Có thể bỏ hoặc comment đi nếu không dùng chung nữa
+// const int ENEMY_BULLET_WIDTH = 10; // <<< Có thể bỏ hoặc comment đi nếu không dùng chung nữa
+// const int ENEMY_BULLET_HEIGHT = 20; // <<< Có thể bỏ hoặc comment đi nếu không dùng chung nữa
+
+// --- THÊM MỚI: Kích thước địch theo loại ---
+// Kích thước cho địch NORMAL (Ví dụ: Giữ nguyên như cũ)
+const int NORMAL_ENEMY_WIDTH = 60;
+const int NORMAL_ENEMY_HEIGHT = 60;
+// tỉ lệ 1:2
+const int NORMAL_BULLET_WIDTH = 10;
+const int NORMAL_BULLET_HEIGHT = 20;
+
+// Kích thước cho địch STRAIGHT_SHOOTER (Ví dụ: Hẹp hơn, dài hơn)
+// tỉ lệ 4:3
+const int STRAIGHT_SHOOTER_ENEMY_WIDTH = 60;
+const int STRAIGHT_SHOOTER_ENEMY_HEIGHT = 45;
+// tỉ lệ 2:1
+const int STRAIGHT_SHOOTER_BULLET_WIDTH = 60; // Đạn nhỏ hơn
+const int STRAIGHT_SHOOTER_BULLET_HEIGHT = 30; // Đạn dài hơn
+
+// Kích thước cho địch WEAVER (Ví dụ: Rộng hơn, thấp hơn)
+//tỉ lệ 5:4
+const int WEAVER_ENEMY_WIDTH = 75;
+const int WEAVER_ENEMY_HEIGHT = 60;
+// tỉ lệ 4:3
+const int WEAVER_BULLET_WIDTH = 34;  // Ví dụ: Đạn tròn nhỏ
+const int WEAVER_BULLET_HEIGHT = 25; // Ví dụ: Đạn tròn nhỏ
+
+// Kích thước cho địch TANK (Ví dụ: Lớn hơn về mọi mặt)
+//tỉ lệ 5:4
+const int TANK_ENEMY_WIDTH = 75;
+const int TANK_ENEMY_HEIGHT = 60;
+// tỉ lệ 4:3
+const int TANK_BULLET_WIDTH = 34; // Đạn to hơn
+const int TANK_BULLET_HEIGHT = 25;
+
+// -----------------------------------------------------
+
+// --- THÊM MỚI: Kích thước Player và Đạn theo Level ---
+// Level 1
+// tỉ lệ 5:7
+const int PLAYER_WIDTH_LVL1 = 60;
+const int PLAYER_HEIGHT_LVL1 = 84;
+// tỉ lệ 1:2
+const int PLAYER_BULLET_WIDTH_LVL1 = 15; // Giữ nguyên kích thước bạn đã tăng
+const int PLAYER_BULLET_HEIGHT_LVL1 = 30; // Giữ nguyên kích thước bạn đã tăng
+
+// Level 2 (Ví dụ: Tăng nhẹ)
+// tỉ lệ 5:7
+const int PLAYER_WIDTH_LVL2 = 60;
+const int PLAYER_HEIGHT_LVL2 = 84;
+// tỉ lệ 1:1
+const int PLAYER_BULLET_WIDTH_LVL2 = 35;
+const int PLAYER_BULLET_HEIGHT_LVL2 = 35;
+
+// Level 3 (Ví dụ: Tăng nữa)
+//tỉ lệ 3:2
+const int PLAYER_WIDTH_LVL3 = 125;
+const int PLAYER_HEIGHT_LVL3 = 84;
+// tỉ lệ 4:3
+const int PLAYER_BULLET_WIDTH_LVL3 = 54;
+const int PLAYER_BULLET_HEIGHT_LVL3 = 40;
+
+// Level 4 (Ví dụ: Lớn nhất)
+// tỉ lệ 7:5
+const int PLAYER_WIDTH_LVL4 = 168;
+const int PLAYER_HEIGHT_LVL4 = 120;
+// tỉ lệ 2:1
+const int PLAYER_BULLET_WIDTH_LVL4 = 80;
+const int PLAYER_BULLET_HEIGHT_LVL4 = 40;
+// -----------------------------------------------------
 
 
 // --- THÊM MỚI: Health & Damage Constants ---
@@ -91,6 +155,7 @@ struct Entity {
     int enemyStopY = 0;
     Uint32 lastShotTime = 0;
     Uint32 fireCooldown = 1500;
+    int level = 1;
 
     // --- Các trường cập nhật/mới ---
     EnemyType type = NORMAL;
@@ -128,7 +193,7 @@ const int PAUSE_BUTTON_WIDTH = 80;
 const int PAUSE_BUTTON_HEIGHT = 40;
 Button pauseButton = {
     {SCREEN_WIDTH - PAUSE_BUTTON_WIDTH - 10, 10, PAUSE_BUTTON_WIDTH, PAUSE_BUTTON_HEIGHT},
-    "||", // Luôn là "||"
+    "Pause", // Luôn là "||"
     false
 };
 
@@ -139,19 +204,32 @@ const int pauseMenuButtonX = SCREEN_WIDTH / 2 - PAUSE_MENU_BUTTON_WIDTH / 2; // 
 Button pauseMenuButtons[] = {
     {{pauseMenuButtonX, 250, PAUSE_MENU_BUTTON_WIDTH, PAUSE_MENU_BUTTON_HEIGHT}, "Continue", false},
     {{pauseMenuButtonX, 340, PAUSE_MENU_BUTTON_WIDTH, PAUSE_MENU_BUTTON_HEIGHT}, "Mute Sound", false}, // Text sẽ được cập nhật khi vào Pause
-    {{pauseMenuButtonX, 430, PAUSE_MENU_BUTTON_WIDTH, PAUSE_MENU_BUTTON_HEIGHT}, "Save & Exit to Menu", false} // <<< Chức năng chưa được thêm vào phiên bản này
+    {{pauseMenuButtonX, 430, PAUSE_MENU_BUTTON_WIDTH, PAUSE_MENU_BUTTON_HEIGHT}, "Exit to Menu", false} // <<< Chức năng chưa được thêm vào phiên bản này
 };
 const int PAUSE_MENU_BUTTON_COUNT = sizeof(pauseMenuButtons) / sizeof(Button);
 
 // --- Global Variables ---
-SDL_Texture* playerTexture = nullptr;
-SDL_Texture* enemyTexture = nullptr;
-SDL_Texture* bulletTexture = nullptr; // <<< Sửa: Chỉ cần một texture đạn
-SDL_Texture* enemyBulletTexture = nullptr; // <<< Thêm: Texture đạn địch (nếu muốn khác)
+SDL_Texture* playerTextureLvl1 = nullptr;
+SDL_Texture* playerTextureLvl2 = nullptr;
+SDL_Texture* playerTextureLvl3 = nullptr;
+SDL_Texture* playerTextureLvl4 = nullptr;
+SDL_Texture* bulletTextureLvl1 = nullptr;
+SDL_Texture* bulletTextureLvl2 = nullptr;
+SDL_Texture* bulletTextureLvl3 = nullptr;
+SDL_Texture* bulletTextureLvl4 = nullptr;
+SDL_Texture* enemyTexture = nullptr;          // Giữ lại dòng này
+// SDL_Texture* enemyBulletTexture = nullptr; // <<< XÓA DÒNG NÀY
 // --- THÊM MỚI: Textures cho địch mới ---
 SDL_Texture* enemyTextureStraight = nullptr;
 SDL_Texture* enemyTextureWeave = nullptr;
 SDL_Texture* enemyTextureTank = nullptr;
+// <<< THÊM MỚI: Textures cho đạn địch riêng >>>
+SDL_Texture* normalBulletTexture = nullptr;
+SDL_Texture* straightShooterBulletTexture = nullptr;
+SDL_Texture* tankBulletTexture = nullptr;
+SDL_Texture* weaverBulletTexture = nullptr;
+// ------------------------------------
+
 // ------------------------------------
 std::vector<Entity> enemies;
 std::vector<Entity> bullets;
@@ -183,6 +261,7 @@ bool isFollowingMouse = false;
 SDL_Texture* loadTexture(const char* path);
 void saveHighScore();
 void loadHighScore();
+void checkPlayerLevelUp();
 void renderText(const std::string& text, int x, int y, SDL_Color color);
 void renderButton(Button& button);
 void spawnEnemy();
@@ -238,6 +317,56 @@ void loadHighScore() {
     else {
         std::cout << "highscore.txt not found. Starting with high score 0." << std::endl;
         highScore = 0;
+    }
+}
+
+// <<< THÊM MỚI: Hàm kiểm tra và xử lý tăng cấp >>>
+void checkPlayerLevelUp() {
+    if (player.level >= 4) return; // Đã đạt cấp tối đa
+
+    int scoreRequiredForNextLevel = player.level * 250;
+
+    if (currentScore >= scoreRequiredForNextLevel) {
+        player.level++;
+        std::cout << "Player Leveled Up to Level: " << player.level << std::endl;
+
+        // <<< THÊM MỚI: Lưu vị trí tâm cũ >>>
+        float oldCenterX = player.xPos + player.rect.w / 2.0f;
+        float oldCenterY = player.yPos + player.rect.h / 2.0f;
+
+        // --- Cập nhật texture VÀ KÍCH THƯỚC người chơi ---
+        switch (player.level) {
+        case 2:
+            player.texture = playerTextureLvl2;
+            player.rect.w = PLAYER_WIDTH_LVL2;   // <<< Cập nhật kích thước
+            player.rect.h = PLAYER_HEIGHT_LVL2;  // <<< Cập nhật kích thước
+            // Optional: player.bulletDamage += 1;
+            break;
+        case 3:
+            player.texture = playerTextureLvl3;
+            player.rect.w = PLAYER_WIDTH_LVL3;   // <<< Cập nhật kích thước
+            player.rect.h = PLAYER_HEIGHT_LVL3;  // <<< Cập nhật kích thước
+            break;
+        case 4:
+            player.texture = playerTextureLvl4;
+            player.rect.w = PLAYER_WIDTH_LVL4;   // <<< Cập nhật kích thước
+            player.rect.h = PLAYER_HEIGHT_LVL4;  // <<< Cập nhật kích thước
+            break;
+        }
+
+        // <<< THÊM MỚI: Cập nhật lại xPos/yPos để giữ nguyên tâm >>>
+        player.xPos = oldCenterX - player.rect.w / 2.0f;
+        player.yPos = oldCenterY - player.rect.h / 2.0f;
+
+        // <<< THÊM MỚI: Đảm bảo không ra khỏi màn hình sau khi đổi kích thước/vị trí >>>
+        player.xPos = std::max(0.0f, std::min((float)SCREEN_WIDTH - player.rect.w, player.xPos));
+        player.yPos = std::max(0.0f, std::min((float)SCREEN_HEIGHT - player.rect.h, player.yPos));
+
+        // Cập nhật rect x,y từ xPos, yPos mới (quan trọng sau khi điều chỉnh vị trí)
+        player.rect.x = (int)player.xPos;
+        player.rect.y = (int)player.yPos;
+
+        // Optional: Play level up sound
     }
 }
 
@@ -311,16 +440,57 @@ void spawnEnemy() {
 
     newEnemy.type = chosenType;
 
-    int spawnX = rand() % (SCREEN_WIDTH - ENEMY_WIDTH);
-    newEnemy.rect = { spawnX, -ENEMY_HEIGHT, ENEMY_WIDTH, ENEMY_HEIGHT };
+    // <<< SỬA ĐỔI: Xác định kích thước trước khi tính spawnX (nếu cần) hoặc đặt trong switch >>>
+    int currentEnemyWidth = 0; // Biến tạm để lưu width
+    int currentEnemyHeight = 0; // Biến tạm để lưu height
+
+    // Đặt kích thước dựa trên type TRƯỚC KHI dùng nó trong rect
+    switch (chosenType) {
+    case NORMAL:
+        currentEnemyWidth = NORMAL_ENEMY_WIDTH;
+        currentEnemyHeight = NORMAL_ENEMY_HEIGHT;
+        newEnemy.texture = enemyTexture;
+        // ... (các thuộc tính khác của NORMAL)
+        break;
+    case STRAIGHT_SHOOTER:
+        currentEnemyWidth = STRAIGHT_SHOOTER_ENEMY_WIDTH;
+        currentEnemyHeight = STRAIGHT_SHOOTER_ENEMY_HEIGHT;
+        newEnemy.texture = enemyTextureStraight;
+        // ... (các thuộc tính khác của STRAIGHT_SHOOTER)
+        break;
+    case WEAVER:
+        currentEnemyWidth = WEAVER_ENEMY_WIDTH;
+        currentEnemyHeight = WEAVER_ENEMY_HEIGHT;
+        newEnemy.texture = enemyTextureWeave;
+        // ... (các thuộc tính khác của WEAVER)
+        break;
+    case TANK:
+        currentEnemyWidth = TANK_ENEMY_WIDTH;
+        currentEnemyHeight = TANK_ENEMY_HEIGHT;
+        newEnemy.texture = enemyTextureTank;
+        // ... (các thuộc tính khác của TANK)
+        break;
+    }
+
+    // <<< SỬA ĐỔI: Tính toán spawnX cẩn thận hơn nếu width thay đổi nhiều >>>
+    // Cách đơn giản: Dùng width vừa xác định
+    int spawnX = rand() % (SCREEN_WIDTH - currentEnemyWidth);
+    // Cách an toàn hơn nếu kích thước chênh lệch lớn (dùng max width):
+    // int maxEnemyWidth = std::max({NORMAL_ENEMY_WIDTH, STRAIGHT_SHOOTER_ENEMY_WIDTH, WEAVER_ENEMY_WIDTH, TANK_ENEMY_WIDTH});
+    // int spawnX = rand() % (SCREEN_WIDTH - maxEnemyWidth);
+
+
+    // <<< SỬA ĐỔI: Sử dụng kích thước đã xác định khi tạo rect >>>
+    newEnemy.rect = { spawnX, -currentEnemyHeight, currentEnemyWidth, currentEnemyHeight };
     newEnemy.xPos = (float)spawnX;
     newEnemy.yPos = (float)newEnemy.rect.y;
     newEnemy.speedX = 0;
     newEnemy.lastShotTime = SDL_GetTicks() + (rand() % 1000);
 
+    // <<< DI CHUYỂN: Phần còn lại của switch để gán health, damage, speed,... vào đây >>>
     switch (chosenType) {
     case NORMAL:
-        newEnemy.texture = enemyTexture;
+        // newEnemy.texture = enemyTexture; // Đã gán ở trên
         newEnemy.health = NORMAL_INITIAL_HEALTH;
         newEnemy.maxHealth = NORMAL_INITIAL_HEALTH;
         newEnemy.bulletDamage = NORMAL_BULLET_DAMAGE;
@@ -330,7 +500,7 @@ void spawnEnemy() {
         newEnemy.fireCooldown = static_cast<Uint32>(1000 + (rand() % 1500));
         break;
     case STRAIGHT_SHOOTER:
-        newEnemy.texture = enemyTextureStraight;
+        // newEnemy.texture = enemyTextureStraight; // Đã gán ở trên
         newEnemy.health = STRAIGHT_SHOOTER_INITIAL_HEALTH;
         newEnemy.maxHealth = STRAIGHT_SHOOTER_INITIAL_HEALTH;
         newEnemy.bulletDamage = STRAIGHT_SHOOTER_BULLET_DAMAGE;
@@ -340,20 +510,23 @@ void spawnEnemy() {
         newEnemy.fireCooldown = static_cast<Uint32>(1200 + (rand() % 1000));
         break;
     case WEAVER:
-        newEnemy.texture = enemyTextureWeave;
+        // newEnemy.texture = enemyTextureWeave; // Đã gán ở trên
         newEnemy.health = WEAVER_INITIAL_HEALTH;
         newEnemy.maxHealth = WEAVER_INITIAL_HEALTH;
-        newEnemy.bulletDamage = WEAVER_BULLET_DAMAGE;
+        newEnemy.bulletDamage = WEAVER_BULLET_DAMAGE; // Sát thương đạn Weaver
         newEnemy.collisionDamage = WEAVER_COLLISION_DAMAGE;
         newEnemy.speedY = currentEnemySpeed * (0.9f + (rand() % 2) / 10.0f);
-        newEnemy.enemyStopY = -1;
-        newEnemy.fireCooldown = UINT32_MAX; // Không bắn
+        newEnemy.enemyStopY = -1; // Không dừng lại
+        // <<< SỬA ĐỔI: Cho phép bắn liên tục >>>
+        // Giá trị nhỏ hơn -> bắn nhanh hơn. Ví dụ: 500ms +/- 200ms
+        newEnemy.fireCooldown = static_cast<Uint32>(500 + (rand() % 401) - 200);
         newEnemy.initialXPos = newEnemy.xPos;
-        newEnemy.weaveAmplitude = 40.0f + (rand() % 40);
-        newEnemy.weaveFrequency = 0.004f + (float)(rand() % 5) / 1000.0f;
+        // <<< SỬA ĐỔI: Tăng biên độ >>>
+        newEnemy.weaveAmplitude = 150.0f + (rand() % 100); // Ví dụ: biên độ lớn hơn (150-249)
+        newEnemy.weaveFrequency = 0.004f + (float)(rand() % 5) / 1000.0f; // Giữ nguyên hoặc điều chỉnh tần số nếu muốn
         break;
     case TANK:
-        newEnemy.texture = enemyTextureTank;
+        // newEnemy.texture = enemyTextureTank; // Đã gán ở trên
         newEnemy.health = TANK_INITIAL_HEALTH;
         newEnemy.maxHealth = TANK_INITIAL_HEALTH;
         newEnemy.bulletDamage = TANK_BULLET_DAMAGE;
@@ -363,6 +536,7 @@ void spawnEnemy() {
         newEnemy.fireCooldown = static_cast<Uint32>(1800 + (rand() % 2000));
         break;
     }
+
     enemies.push_back(newEnemy);
 }
 
@@ -370,16 +544,18 @@ void enemyShoot() {
     Uint32 currentTime = SDL_GetTicks();
     for (auto& enemy : enemies) {
         bool canShoot = false;
+        // <<< SỬA ĐỔI: Cho phép WEAVER bắn dựa trên cooldown >>>
         switch (enemy.type) {
         case NORMAL: case TANK:
             canShoot = (enemy.enemyStopY != -1 && enemy.yPos >= enemy.enemyStopY && currentTime > enemy.lastShotTime + enemy.fireCooldown);
             break;
         case STRAIGHT_SHOOTER:
+        case WEAVER: // Weaver giờ cũng bắn theo cooldown
             canShoot = (currentTime > enemy.lastShotTime + enemy.fireCooldown);
             break;
-        case WEAVER:
-            canShoot = false;
-            break;
+            // case WEAVER: // Xóa hoặc comment dòng cũ
+            //     canShoot = false;
+            //     break;
         }
 
         if (canShoot) {
@@ -388,11 +564,14 @@ void enemyShoot() {
 
             float bulletSpeedX = 0.0f;
             float bulletSpeedY = 0.0f;
-            float bulletSpeedMagnitude = ENEMY_BULLET_SPEED * (enemy.type == TANK ? 0.8f : 1.0f);
+            float bulletSpeedMagnitude = ENEMY_BULLET_SPEED; // Tốc độ gốc
 
-            if (enemy.type == STRAIGHT_SHOOTER) {
+            // <<< SỬA ĐỔI: Xác định hướng bắn cho WEAVER (ví dụ: bắn thẳng) >>>
+            if (enemy.type == STRAIGHT_SHOOTER || enemy.type == WEAVER) { // Bắn thẳng xuống
                 bulletSpeedX = 0.0f;
                 bulletSpeedY = bulletSpeedMagnitude;
+                // Optional: Điều chỉnh tốc độ đạn riêng cho Weaver nếu muốn
+                // if (enemy.type == WEAVER) bulletSpeedY *= 0.8f; // Ví dụ: chậm hơn chút
             }
             else { // NORMAL và TANK bắn về phía player
                 float targetX = player.xPos + player.rect.w / 2.0f;
@@ -411,13 +590,54 @@ void enemyShoot() {
             }
 
             Entity enemyBullet;
-            enemyBullet.texture = enemyBulletTexture ? enemyBulletTexture : bulletTexture;
-            enemyBullet.rect = { (int)(startX - ENEMY_BULLET_WIDTH / 2.0f), (int)startY, ENEMY_BULLET_WIDTH, ENEMY_BULLET_HEIGHT };
+
+            // <<< THÊM MỚI / SỬA ĐỔI: Xác định kích thước VÀ TEXTURE đạn dựa trên loại địch >>>
+            int bulletW = 0;
+            int bulletH = 0;
+            switch (enemy.type) {
+            case NORMAL:
+                bulletW = NORMAL_BULLET_WIDTH;
+                bulletH = NORMAL_BULLET_HEIGHT;
+                enemyBullet.texture = normalBulletTexture;
+                break;
+            case STRAIGHT_SHOOTER:
+                bulletW = STRAIGHT_SHOOTER_BULLET_WIDTH;
+                bulletH = STRAIGHT_SHOOTER_BULLET_HEIGHT;
+                enemyBullet.texture = straightShooterBulletTexture;
+                break;
+            case TANK:
+                bulletW = TANK_BULLET_WIDTH;
+                bulletH = TANK_BULLET_HEIGHT;
+                enemyBullet.texture = tankBulletTexture;
+                break;
+                // <<< THÊM MỚI: Case cho đạn WEAVER >>>
+            case WEAVER:
+                bulletW = WEAVER_BULLET_WIDTH;
+                bulletH = WEAVER_BULLET_HEIGHT;
+                enemyBullet.texture = weaverBulletTexture; // GÁN TEXTURE ĐẠN WEAVER
+                break;
+            default: // Trường hợp dự phòng
+                bulletW = NORMAL_BULLET_WIDTH;
+                bulletH = NORMAL_BULLET_HEIGHT;
+                enemyBullet.texture = normalBulletTexture;
+                break;
+            }
+
+            // Kiểm tra texture SAU KHI đã gán
+            if (!enemyBullet.texture) {
+                std::cerr << "Warning: Enemy bullet texture is null for type " << static_cast<int>(enemy.type)
+                    << " in enemyShoot! Cannot create bullet." << std::endl;
+                enemy.lastShotTime = currentTime;
+                continue;
+            }
+
+            // Tạo rect và các thuộc tính khác
+            enemyBullet.rect = { (int)(startX - bulletW / 2.0f), (int)startY, bulletW, bulletH };
             enemyBullet.xPos = (float)enemyBullet.rect.x;
             enemyBullet.yPos = (float)startY;
             enemyBullet.speedX = bulletSpeedX;
             enemyBullet.speedY = bulletSpeedY;
-            enemyBullet.damage = enemy.bulletDamage;
+            enemyBullet.damage = enemy.bulletDamage; // Lấy sát thương đã gán cho Weaver
             enemyBullets.push_back(enemyBullet);
 
             enemy.lastShotTime = currentTime;
@@ -483,6 +703,7 @@ void updateGame(float deltaTime) {
                     if (enemies[j].type == TANK) scoreBonus = 30;
                     else if (enemies[j].type == WEAVER) scoreBonus = 15;
                     currentScore += scoreBonus;
+                    checkPlayerLevelUp();
                     if (musicOn && explosionSound) {
                         Mix_PlayChannel(-1, explosionSound, 0);
                     }
@@ -502,10 +723,11 @@ void updateGame(float deltaTime) {
         if (SDL_HasIntersection(&enemies[i].rect, &player.rect)) {
             player.health -= enemies[i].collisionDamage;
 
-            int scoreBonus = 5;
+            int scoreBonus = 5; // Điểm cơ bản khi va chạm
             if (enemies[i].type == TANK) scoreBonus = 15;
             else if (enemies[i].type == WEAVER) scoreBonus = 10;
-            currentScore += scoreBonus;
+            currentScore += scoreBonus; // Chỉ cộng điểm một lần
+            checkPlayerLevelUp();
             if (musicOn && explosionSound) {
                 Mix_PlayChannel(-1, explosionSound, 0);
             }
@@ -552,33 +774,66 @@ void updateGame(float deltaTime) {
 void cleanup() {
     if (renderer) SDL_DestroyRenderer(renderer);
     if (window) SDL_DestroyWindow(window);
-    SDL_DestroyTexture(playerTexture);
+    // SDL_DestroyTexture(playerTexture); // <<< Xóa hoặc comment
+    // SDL_DestroyTexture(bulletTexture); // <<< Xóa hoặc comment
+
+    // <<< THÊM MỚI: Giải phóng các texture cấp độ >>>
+    SDL_DestroyTexture(playerTextureLvl1);
+    SDL_DestroyTexture(playerTextureLvl2);
+    SDL_DestroyTexture(playerTextureLvl3);
+    SDL_DestroyTexture(playerTextureLvl4);
+    SDL_DestroyTexture(bulletTextureLvl1);
+    SDL_DestroyTexture(bulletTextureLvl2);
+    SDL_DestroyTexture(bulletTextureLvl3);
+    SDL_DestroyTexture(bulletTextureLvl4);
+
     SDL_DestroyTexture(enemyTexture);
-    SDL_DestroyTexture(bulletTexture);
+    //SDL_DestroyTexture(enemyBulletTexture); // <<< SỬA ĐỔI: Đảm bảo giải phóng texture đạn địch
     SDL_DestroyTexture(backgroundTexture);
     SDL_DestroyTexture(gameBackgroundTexture);
     SDL_DestroyTexture(gameOverBackgroundTexture);
     SDL_DestroyTexture(enemyTextureStraight);
     SDL_DestroyTexture(enemyTextureWeave);
     SDL_DestroyTexture(enemyTextureTank);
+
+    // <<< THÊM MỚI: Giải phóng texture đạn địch riêng >>>
+    SDL_DestroyTexture(normalBulletTexture);
+    SDL_DestroyTexture(straightShooterBulletTexture);
+    SDL_DestroyTexture(tankBulletTexture);
+    SDL_DestroyTexture(weaverBulletTexture);
+    // ------------------------------------------
+
     if (font) TTF_CloseFont(font);
     Mix_FreeMusic(bgMusic);
     Mix_FreeMusic(gameMusic);
     Mix_FreeChunk(startSound);
     Mix_FreeChunk(explosionSound);
 
+    // <<< THÊM MỚI: Đặt các con trỏ texture cấp độ về nullptr >>>
     renderer = nullptr;
     window = nullptr;
     font = nullptr;
-    playerTexture = nullptr;
+    playerTextureLvl1 = nullptr;
+    playerTextureLvl2 = nullptr;
+    playerTextureLvl3 = nullptr;
+    playerTextureLvl4 = nullptr;
+    bulletTextureLvl1 = nullptr;
+    bulletTextureLvl2 = nullptr;
+    bulletTextureLvl3 = nullptr;
+    bulletTextureLvl4 = nullptr;
     enemyTexture = nullptr;
-    bulletTexture = nullptr;
+    //enemyBulletTexture = nullptr; // <<< SỬA ĐỔI
     backgroundTexture = nullptr;
     gameBackgroundTexture = nullptr;
     gameOverBackgroundTexture = nullptr;
     enemyTextureStraight = nullptr;
     enemyTextureWeave = nullptr;
     enemyTextureTank = nullptr;
+    // <<< THÊM MỚI: Đặt con trỏ texture đạn địch riêng về nullptr >>>
+    normalBulletTexture = nullptr;
+    straightShooterBulletTexture = nullptr;
+    tankBulletTexture = nullptr;
+    weaverBulletTexture = nullptr;
     bgMusic = nullptr;
     gameMusic = nullptr;
     startSound = nullptr;
@@ -640,9 +895,15 @@ int main(int argc, char* argv[]) {
     backgroundTexture = loadTexture("background.png");
     gameBackgroundTexture = loadTexture("game_background.png");
     gameOverBackgroundTexture = loadTexture("gameover_background.png");
-    playerTexture = loadTexture("player.png");
+    // playerTexture = loadTexture("player.png"); // <<< Xóa hoặc comment
     enemyTexture = loadTexture("enemy.png");
-    bulletTexture = loadTexture("bullet.png");
+    // bulletTexture = loadTexture("bullet.png"); // <<< Xóa hoặc comment
+    // <<< THÊM MỚI: Tải texture đạn địch riêng >>>
+    // Thay thế "..." bằng tên file ảnh thực tế của bạn
+    normalBulletTexture = loadTexture("normal_bullet.png");
+    straightShooterBulletTexture = loadTexture("straight_shooter_bullet.png");
+    tankBulletTexture = loadTexture("tank_bullet.png");
+    weaverBulletTexture = loadTexture("weaver_bullet.png");
     enemyTextureStraight = loadTexture("enemy_straight.png");
     enemyTextureWeave = loadTexture("enemy_weave.png");
     enemyTextureTank = loadTexture("enemy_tank.png");
@@ -651,10 +912,24 @@ int main(int argc, char* argv[]) {
     startSound = Mix_LoadWAV("start_sound.wav");
     explosionSound = Mix_LoadWAV("explosion.wav");
 
+    // <<< THÊM MỚI: Tải texture cho các cấp độ >>>
+    playerTextureLvl1 = loadTexture("player_lvl1.png");
+    playerTextureLvl2 = loadTexture("player_lvl2.png");
+    playerTextureLvl3 = loadTexture("player_lvl3.png");
+    playerTextureLvl4 = loadTexture("player_lvl4.png");
+    bulletTextureLvl1 = loadTexture("bullet_lvl1.png");
+    bulletTextureLvl2 = loadTexture("bullet_lvl2.png");
+    bulletTextureLvl3 = loadTexture("bullet_lvl3.png");
+    bulletTextureLvl4 = loadTexture("bullet_lvl4.png");
+
     // --- Check Resource Loading ---
     if (!backgroundTexture || !gameBackgroundTexture || !gameOverBackgroundTexture ||
-        !playerTexture || !enemyTexture || !bulletTexture ||
-        !enemyTextureStraight || !enemyTextureWeave || !enemyTextureTank ||
+        !playerTextureLvl1 || !playerTextureLvl2 || !playerTextureLvl3 || !playerTextureLvl4 ||
+        !bulletTextureLvl1 || !bulletTextureLvl2 || !bulletTextureLvl3 || !bulletTextureLvl4 ||
+        !enemyTexture || !enemyTextureStraight || !enemyTextureWeave || !enemyTextureTank ||
+        // Kiểm tra texture đạn mới
+        !normalBulletTexture || !straightShooterBulletTexture || !tankBulletTexture ||
+        !weaverBulletTexture ||
         !bgMusic || !gameMusic || !explosionSound) {
         std::cerr << "Failed to load one or more resources!" << std::endl;
         cleanup();
@@ -668,14 +943,19 @@ int main(int argc, char* argv[]) {
     }
 
     // --- Initialize Player ---
-    player.rect = { SCREEN_WIDTH / 2 - PLAYER_WIDTH / 2, SCREEN_HEIGHT - 100, PLAYER_WIDTH, PLAYER_HEIGHT };
-    player.texture = playerTexture;
+    // <<< SỬA ĐỔI: Khởi tạo với kích thước Level 1 >>>
+    player.rect.w = PLAYER_WIDTH_LVL1;
+    player.rect.h = PLAYER_HEIGHT_LVL1;
+    player.rect.x = SCREEN_WIDTH / 2 - player.rect.w / 2; // Căn giữa theo chiều rộng Lvl1
+    player.rect.y = SCREEN_HEIGHT - 100 - player.rect.h; // Đặt y để đáy cách lề dưới 100px
+    player.texture = playerTextureLvl1;
     player.xPos = (float)player.rect.x;
     player.yPos = (float)player.rect.y;
     player.health = PLAYER_INITIAL_HEALTH;
     player.maxHealth = PLAYER_INITIAL_HEALTH;
     player.bulletDamage = PLAYER_BULLET_DAMAGE;
     player.lastShotTime = 0;
+    player.level = 1;
 
     // --- Game Loop Variables ---
     SDL_Event event;
@@ -716,22 +996,32 @@ int main(int argc, char* argv[]) {
                     if (state == MENU) {
                         for (int i = 0; i < BUTTON_COUNT; i++) {
                             if (buttons[i].hovered) {
-                                if (i == 0) { // Start New Game
+                                if (i == 0) { // Start New Game hoặc Play Again (trong GAME_OVER)
                                     currentScore = 0;
                                     enemies.clear(); bullets.clear(); enemyBullets.clear();
                                     currentEnemySpeed = INITIAL_ENEMY_SPEED;
-                                    player.rect = { SCREEN_WIDTH / 2 - PLAYER_WIDTH / 2, SCREEN_HEIGHT - 100, PLAYER_WIDTH, PLAYER_HEIGHT };
-                                    player.xPos = (float)player.rect.x; player.yPos = (float)player.rect.y;
+
+                                    // <<< SỬA ĐỔI: Reset kích thước và vị trí về Level 1 >>>
+                                    player.rect.w = PLAYER_WIDTH_LVL1;
+                                    player.rect.h = PLAYER_HEIGHT_LVL1;
+                                    player.rect.x = SCREEN_WIDTH / 2 - player.rect.w / 2;
+                                    player.rect.y = SCREEN_HEIGHT - 100 - player.rect.h; // Đặt lại vị trí y
+                                    player.xPos = (float)player.rect.x; // Đồng bộ lại xPos/yPos
+                                    player.yPos = (float)player.rect.y;
+
                                     player.lastShotTime = 0;
                                     lastEnemySpawnTime = SDL_GetTicks();
-                                    player.health = player.maxHealth; // <<< Sửa lỗi thiếu maxHealth
+                                    player.health = player.maxHealth;
+                                    player.level = 1;                      // Reset level
+                                    player.texture = playerTextureLvl1;    // Reset texture
+
+                                    // player.bulletDamage = PLAYER_BULLET_DAMAGE; // Reset damage nếu có thay đổi
+
                                     Mix_HaltMusic();
-                                    if (musicOn && gameMusic) {
-                                        Mix_PlayMusic(gameMusic, -1);
-                                    }
+                                    if (musicOn && gameMusic) { Mix_PlayMusic(gameMusic, -1); }
                                     isPlayerDragging = false; isMovingToTarget = false; isFollowingMouse = false;
                                     state = GAME;
-                                    lastFrameTime = SDL_GetTicks(); // <<< Reset time khi bắt đầu game mới
+                                    lastFrameTime = SDL_GetTicks();
                                 }
                                 else if (i == 1) { // Continue
                                     // Chức năng chưa thêm vào phiên bản này
@@ -768,18 +1058,28 @@ int main(int argc, char* argv[]) {
                                     currentScore = 0;
                                     enemies.clear(); bullets.clear(); enemyBullets.clear();
                                     currentEnemySpeed = INITIAL_ENEMY_SPEED;
-                                    player.rect = { SCREEN_WIDTH / 2 - PLAYER_WIDTH / 2, SCREEN_HEIGHT - 100, PLAYER_WIDTH, PLAYER_HEIGHT };
-                                    player.xPos = (float)player.rect.x; player.yPos = (float)player.rect.y;
+
+                                    // <<< SỬA ĐỔI: Reset kích thước và vị trí về Level 1 (GIỐNG NHƯ START NEW GAME) >>>
+                                    player.rect.w = PLAYER_WIDTH_LVL1;
+                                    player.rect.h = PLAYER_HEIGHT_LVL1;
+                                    player.rect.x = SCREEN_WIDTH / 2 - player.rect.w / 2;
+                                    player.rect.y = SCREEN_HEIGHT - 100 - player.rect.h; // Đặt lại vị trí y
+                                    player.xPos = (float)player.rect.x; // Đồng bộ lại xPos/yPos
+                                    player.yPos = (float)player.rect.y;
+
                                     player.lastShotTime = 0;
                                     lastEnemySpawnTime = SDL_GetTicks();
-                                    player.health = player.maxHealth; // <<< Sửa lỗi thiếu maxHealth
+                                    player.health = player.maxHealth;
+                                    player.level = 1;                      // Reset level
+                                    player.texture = playerTextureLvl1;    // Reset texture
+
+                                    // player.bulletDamage = PLAYER_BULLET_DAMAGE; // Reset damage nếu có thay đổi
+
                                     isPlayerDragging = false; isMovingToTarget = false; isFollowingMouse = false;
                                     Mix_HaltMusic();
-                                    if (musicOn && gameMusic) {
-                                        Mix_PlayMusic(gameMusic, -1);
-                                    }
+                                    if (musicOn && gameMusic) { Mix_PlayMusic(gameMusic, -1); }
                                     state = GAME;
-                                    lastFrameTime = SDL_GetTicks(); // <<< Reset time khi chơi lại
+                                    lastFrameTime = SDL_GetTicks();
                                 }
                                 else if (i == 1) { // Main Menu
                                     isPlayerDragging = false; isMovingToTarget = false; isFollowingMouse = false;
@@ -921,12 +1221,47 @@ int main(int argc, char* argv[]) {
             Uint32 currentTime = SDL_GetTicks();
             if (currentTime > player.lastShotTime + PLAYER_AUTO_FIRE_COOLDOWN) {
                 Entity newBullet;
-                newBullet.rect = { player.rect.x + player.rect.w / 2 - PLAYER_BULLET_WIDTH / 2, player.rect.y, PLAYER_BULLET_WIDTH, PLAYER_BULLET_HEIGHT };
-                newBullet.texture = bulletTexture;
-                newBullet.xPos = (float)newBullet.rect.x;
-                newBullet.yPos = (float)player.rect.y;
-                // Gán damage cho đạn player
-                newBullet.damage = player.bulletDamage; // <<< Thêm dòng này
+
+                // <<< THÊM MỚI: Xác định kích thước đạn theo level >>>
+                int bulletW = PLAYER_BULLET_WIDTH_LVL1; // Mặc định là Lvl 1
+                int bulletH = PLAYER_BULLET_HEIGHT_LVL1;
+
+                // Chọn texture VÀ cập nhật kích thước đạn dựa trên cấp độ
+                switch (player.level) {
+                case 1:
+                    newBullet.texture = bulletTextureLvl1;
+                    // bulletW, bulletH giữ nguyên giá trị Lvl1
+                    break;
+                case 2:
+                    newBullet.texture = bulletTextureLvl2;
+                    bulletW = PLAYER_BULLET_WIDTH_LVL2; // <<< Lấy kích thước Lvl 2
+                    bulletH = PLAYER_BULLET_HEIGHT_LVL2;
+                    break;
+                case 3:
+                    newBullet.texture = bulletTextureLvl3;
+                    bulletW = PLAYER_BULLET_WIDTH_LVL3; // <<< Lấy kích thước Lvl 3
+                    bulletH = PLAYER_BULLET_HEIGHT_LVL3;
+                    break;
+                case 4:
+                    newBullet.texture = bulletTextureLvl4;
+                    bulletW = PLAYER_BULLET_WIDTH_LVL4; // <<< Lấy kích thước Lvl 4
+                    bulletH = PLAYER_BULLET_HEIGHT_LVL4;
+                    break;
+                default: // Trường hợp dự phòng
+                    newBullet.texture = bulletTextureLvl1;
+                    // bulletW, bulletH giữ nguyên giá trị Lvl1
+                }
+
+                // <<< SỬA ĐỔI: Tính toán vị trí bắn dùng kích thước đạn hiện tại (bulletW) >>>
+                float bulletStartX = player.xPos + player.rect.w / 2.0f - bulletW / 2.0f; // Căn giữa đạn theo chiều rộng mới
+                float bulletStartY = player.yPos; // Bắn từ đỉnh máy bay
+
+                // <<< SỬA ĐỔI: Tạo rect với kích thước đạn mới (bulletW, bulletH) >>>
+                newBullet.rect = { (int)bulletStartX, (int)bulletStartY, bulletW, bulletH };
+
+                newBullet.xPos = bulletStartX; // Đồng bộ xPos/yPos
+                newBullet.yPos = bulletStartY;
+                newBullet.damage = player.bulletDamage;
                 bullets.push_back(newBullet);
                 player.lastShotTime = currentTime;
             }
@@ -980,8 +1315,12 @@ int main(int argc, char* argv[]) {
 
         // --- Render ---
         SDL_RenderClear(renderer);
+        // --- 1. Khai báo màu ---
+        SDL_Color white = { 255, 255, 255, 255 };
+        SDL_Color yellow = { 255, 255, 0, 255 };
+        SDL_Color gray = { 0, 0, 0, 150 };
 
-        // --- 1. Vẽ Nền theo State ---
+        // --- 2. Vẽ Nền theo State ---
         if (state == MENU) {
             if (backgroundTexture) SDL_RenderCopy(renderer, backgroundTexture, NULL, NULL);
         }
@@ -989,13 +1328,11 @@ int main(int argc, char* argv[]) {
             if (gameOverBackgroundTexture) SDL_RenderCopy(renderer, gameOverBackgroundTexture, NULL, NULL);
         }
         else { // GAME or PAUSED
+            // <<< VẼ NỀN TRƯỚC TIÊN >>>
             if (gameBackgroundTexture) SDL_RenderCopy(renderer, gameBackgroundTexture, NULL, NULL);
         }
 
-        // --- 2. Khai báo màu ---
-        SDL_Color white = { 255, 255, 255, 255 };
-        SDL_Color yellow = { 255, 255, 0, 255 };
-        SDL_Color gray = { 0, 0, 0, 150 };
+
 
         // --- 3. Vẽ Nội dung chồng lên Nền theo State ---
         if (state == MENU) {
@@ -1018,13 +1355,17 @@ int main(int argc, char* argv[]) {
 
             for (int i = 0; i < GAMEOVER_BUTTON_COUNT; i++) renderButton(gameOverButtons[i]);
         }
-        else { // GAME or PAUSED
+        else { // GAME or PAUSED - <<< Chỉ giữ lại khối này cho GAME/PAUSED >>>
+            // <<< SAU ĐÓ VẼ CÁC ENTITY LÊN TRÊN NỀN >>>
             if (player.texture) SDL_RenderCopy(renderer, player.texture, NULL, &player.rect);
             for (auto& enemy : enemies) if (enemy.texture) SDL_RenderCopy(renderer, enemy.texture, NULL, &enemy.rect);
             for (auto& bullet : bullets) if (bullet.texture) SDL_RenderCopy(renderer, bullet.texture, NULL, &bullet.rect);
             for (auto& bullet : enemyBullets) if (bullet.texture) SDL_RenderCopy(renderer, bullet.texture, NULL, &bullet.rect);
 
+            // <<< CUỐI CÙNG VẼ UI (SCORE, LEVEL, HEALTH, BUTTONS) LÊN TRÊN CÙNG >>>
             renderText("Score: " + std::to_string(currentScore), 10, 10, white);
+            renderText("Level: " + std::to_string(player.level), 10, 70, white);
+
 
             int healthBarX = 10, healthBarY = 40, healthBarW = 200, healthBarH = 20;
             float healthPercent = (player.health > 0) ? (float)player.health / player.maxHealth : 0.0f;
@@ -1036,7 +1377,7 @@ int main(int argc, char* argv[]) {
             SDL_SetRenderDrawColor(renderer, 0, 200, 0, 255); SDL_RenderFillRect(renderer, &currentHealthRect);
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); SDL_RenderDrawRect(renderer, &healthBarBgRect);
 
-            renderButton(pauseButton);
+            renderButton(pauseButton); // Nút Pause cũng nên vẽ trên cùng
 
             if (state == PAUSED) {
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
