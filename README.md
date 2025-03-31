@@ -6,7 +6,7 @@ Lớp: IT9
 Chuyên ngành: Công Nghệ Thông Tin	
 Tên game : Airplane Shooter
 ```
-Video test game: [test game.mkv] (https://drive.google.com/file/d/1wg6nqJRNwoy04WqrtlUKZ6zw52fw_2W7/view?usp=sharing)
+Video test game: [test game.mkv](https://drive.google.com/file/d/1wg6nqJRNwoy04WqrtlUKZ6zw52fw_2W7/view?usp=sharing)
 - Lối chơi, logic của game: Game thuộc thể loại bắn máy bay 2D top-down. Người chơi điều khiển máy bay bằng chuột (kéo thả hoặc nhấn di chuyển rồi theo chuột), né tránh và tiêu diệt kẻ địch để đạt điểm cao.
   - Người chơi: Tự động bắn, có thể lên tối đa 4 cấp độ dựa trên điểm số, thay đổi hình ảnh và đạn khi lên cấp. Có thanh máu, thua khi hết máu.
   - Kẻ địch: 4 loại (Normal, Straight Shooter, Weaver, Tank) xuất hiện ngẫu nhiên từ trên xuống với máu, kiểu di chuyển (thẳng, hình sin) và kiểu bắn (thẳng, theo người chơi) khác nhau.
