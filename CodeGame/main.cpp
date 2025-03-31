@@ -163,13 +163,12 @@ int main(int argc, char* argv[]) {
     // Load Audio
     bgMusic = Mix_LoadMUS("background.mp3");
     gameMusic = Mix_LoadMUS("game_music.mp3");
-    startSound = Mix_LoadWAV("start_sound.wav");
     explosionSound = Mix_LoadWAV("explosion.wav");
 
     // --- Check Resource Loading ---
     if (!backgroundTexture || !gameBackgroundTexture || !gameOverBackgroundTexture ||!playerTextureLvl1 || !playerTextureLvl2 || !playerTextureLvl3 || !playerTextureLvl4 ||
         !bulletTextureLvl1 || !bulletTextureLvl2 || !bulletTextureLvl3 || !bulletTextureLvl4 ||!enemyTexture || !enemyTextureStraight || !enemyTextureWeave || !enemyTextureTank ||
-        !normalBulletTexture || !straightShooterBulletTexture || !tankBulletTexture ||!weaverBulletTexture || !explosionTexture ||!bgMusic || !gameMusic || !startSound || !explosionSound || !font)
+        !normalBulletTexture || !straightShooterBulletTexture || !tankBulletTexture ||!weaverBulletTexture || !explosionTexture ||!bgMusic || !gameMusic || !explosionSound || !font)
     {
         std::cerr << "Failed to load one or more resources!" << std::endl;
         cleanup();
