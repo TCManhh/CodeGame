@@ -39,4 +39,4 @@ Video test game: [test game.mkv](https://drive.google.com/file/d/1wg6nqJRNwoy04W
    - Âm thanh nền và hiệu ứng, có thể bật/tắt. 
    - Giao diện hiển thị thông tin cần thiết (Score, Level, Health). 
    - Tích hợp các thư viện SDL2 (Core, Image, TTF, Mixer). 
- - Cấu trúc code rõ ràng, chia thành nhiều module.
+   - Cấu trúc code rõ ràng, chia thành nhiều module.
