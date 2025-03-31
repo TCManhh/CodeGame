@@ -100,7 +100,7 @@ Button pauseButton = {
 
 Button pauseMenuButtons[] = {
     {{pauseMenuButtonX, 250, PAUSE_MENU_BUTTON_WIDTH, PAUSE_MENU_BUTTON_HEIGHT}, "Continue", false},
-    {{pauseMenuButtonX, 340, PAUSE_MENU_BUTTON_WIDTH, PAUSE_MENU_BUTTON_HEIGHT}, "Mute Sound", false}, // Text sẽ cập nhật
+    {{pauseMenuButtonX, 340, PAUSE_MENU_BUTTON_WIDTH, PAUSE_MENU_BUTTON_HEIGHT}, "Mute Sound", false},
     {{pauseMenuButtonX, 430, PAUSE_MENU_BUTTON_WIDTH, PAUSE_MENU_BUTTON_HEIGHT}, "Exit to Menu", false}
 };
 const int PAUSE_MENU_BUTTON_COUNT = sizeof(pauseMenuButtons) / sizeof(Button);
@@ -135,11 +135,8 @@ int main(int argc, char* argv[]) {
 
     // --- Create Window, Renderer, Font ---
     window = SDL_CreateWindow("Airplane Shooter", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-    // ... (Kiểm tra lỗi window)
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    // ... (Kiểm tra lỗi renderer)
     font = TTF_OpenFont("arial.ttf", 28);
-    // ... (Kiểm tra lỗi font)
 
     // --- Load Resources (Gọi hàm loadTexture từ Utils.cpp) ---
     backgroundTexture = loadTexture("background.png");
@@ -170,13 +167,9 @@ int main(int argc, char* argv[]) {
     explosionSound = Mix_LoadWAV("explosion.wav");
 
     // --- Check Resource Loading ---
-    if (!backgroundTexture || !gameBackgroundTexture || !gameOverBackgroundTexture ||
-        !playerTextureLvl1 || !playerTextureLvl2 || !playerTextureLvl3 || !playerTextureLvl4 ||
-        !bulletTextureLvl1 || !bulletTextureLvl2 || !bulletTextureLvl3 || !bulletTextureLvl4 ||
-        !enemyTexture || !enemyTextureStraight || !enemyTextureWeave || !enemyTextureTank ||
-        !normalBulletTexture || !straightShooterBulletTexture || !tankBulletTexture ||
-        !weaverBulletTexture || !explosionTexture ||
-        !bgMusic || !gameMusic || !startSound || !explosionSound || !font)
+    if (!backgroundTexture || !gameBackgroundTexture || !gameOverBackgroundTexture ||!playerTextureLvl1 || !playerTextureLvl2 || !playerTextureLvl3 || !playerTextureLvl4 ||
+        !bulletTextureLvl1 || !bulletTextureLvl2 || !bulletTextureLvl3 || !bulletTextureLvl4 ||!enemyTexture || !enemyTextureStraight || !enemyTextureWeave || !enemyTextureTank ||
+        !normalBulletTexture || !straightShooterBulletTexture || !tankBulletTexture ||!weaverBulletTexture || !explosionTexture ||!bgMusic || !gameMusic || !startSound || !explosionSound || !font)
     {
         std::cerr << "Failed to load one or more resources!" << std::endl;
         cleanup();
